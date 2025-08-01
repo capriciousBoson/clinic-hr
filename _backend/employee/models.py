@@ -76,7 +76,10 @@ class Party(models.Model):
     address_full = models.TextField(max_length=128)
     address_city = models.CharField(max_length=50)
     address_zip = models.CharField(max_length=5)
-    address_state = models.CharField(max_length=2) 
+    address_state = models.CharField(
+        max_length=2,
+        choices=choice_state
+        ) 
 
     marital_status = models.CharField(
         max_length=8,
