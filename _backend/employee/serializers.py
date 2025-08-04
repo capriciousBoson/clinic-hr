@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
+from django.conf import settings
 from .models import Party, EmployeeProfile, ContractorProfile, Document
+from django.db import transaction
 from datetime import date, timedelta
 import re
 
@@ -147,6 +149,7 @@ class PartyUpdateSerializer(BasePartySerializer):
             'address_zip': {'validators': [BasePartySerializer.zip_validator]},
             'phone_number': {'validators': [BasePartySerializer.phone_validator]},
         }
+
 class PartyListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for listing parties"""
     ssn_masked = serializers.SerializerMethodField()
@@ -165,4 +168,120 @@ class PartyListSerializer(serializers.ModelSerializer):
         if obj.ssn:
             return f"***-**-{obj.ssn[-4:]}"
         return None
+    
+
+class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
+    """Create Employee with nested Party"""
+    
+    party = PartyCreateSerializer()
+    employer = settings.AUTH_USER_MODEL
+    class Meta:
+        model = EmployeeProfile
+        fields = [
+            'party', 'employer',  'date_hired', 
+            'date_offboarded'
+        ]
+        extra_kwargs = {
+            'employer': {'required': True},
+            'date_hired': {'required': True},
+        }
+    
+    def validate_date_hired(self, value):
+        """Validate hire date"""
+        if value > date.today():
+            raise serializers.ValidationError("Hire date cannot be in the future.")
+        return value
+    
+    def validate_date_offboarded(self, value):
+        """Validate offboard date if provided"""
+        if value and value > date.today():
+            raise serializers.ValidationError("Offboard date cannot be in the future.")
+        return value
+    
+    def validate(self, attrs):
+        """Cross-field validation"""
+        date_hired = attrs.get('date_hired')
+        date_offboarded = attrs.get('date_offboarded')
+        
+        if date_offboarded and date_hired and date_offboarded <= date_hired:
+            raise serializers.ValidationError({
+                'date_offboarded': 'Offboard date must be after hire date.'
+            })
+        
+        return attrs
+    
+    @transaction.atomic
+    def create(self, validated_data):
+        """Create Employee with nested Party"""
+        party_data = validated_data.pop('party')
+        
+        # Create Party first
+        party = Party.objects.create(**party_data)
+        
+        # Create Employee
+        employee = EmployeeProfile.objects.create(party=party, **validated_data)
+        
+        return employee
+    
+class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
+    """Update Employee with nested Party updates"""
+    
+    party = PartyUpdateSerializer()
+    
+    class Meta:
+        model = EmployeeProfile
+        fields = ['party', 'date_hired', 'date_offboarded']
+    
+    def validate_date_offboarded(self, value):
+        """Validate offboard date"""
+        if value and value > date.today():
+            raise serializers.ValidationError("Offboard date cannot be in the future.")
+        return value
+    
+    def validate(self, attrs):
+        """Cross-field validation"""
+        date_hired = attrs.get('date_hired', self.instance.date_hired)
+        date_offboarded = attrs.get('date_offboarded')
+        
+        if date_offboarded and date_hired and date_offboarded <= date_hired:
+            raise serializers.ValidationError({
+                'date_offboarded': 'Offboard date must be after hire date.'
+            })
+        
+        return attrs
+    
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """Update Employee and nested Party"""
+        party_data = validated_data.pop('party', None)
+        
+        # Update Party if data provided
+        if party_data:
+            party_serializer = PartyUpdateSerializer(
+                instance.party, 
+                data=party_data, 
+                partial=True
+            )
+            if party_serializer.is_valid(raise_exception=True):
+                party_serializer.save()
+        
+        # Update Employee
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        return instance
+
+class EmployeeProfileListSerializer(serializers.ModelSerializer):
+    """Retrieve Employee with nested Party details"""
+    
+    party = PartyListSerializer(read_only=True)
+    employer = settings.AUTH_USER_MODEL
+    
+    class Meta:
+        model = EmployeeProfile
+        fields = [
+            'id', 'party', 'employer', 'date_hired',
+            'date_offboarded'
+        ]
     

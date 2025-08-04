@@ -139,7 +139,7 @@ class EmployeeProfile(models.Model):
     date_offboarded = models.DateField(null=True, blank=True)
 
 class ContractorProfile(models.Model):
-    profile = models.ForeignKey(Party, on_delete=models.CASCADE)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE)
     employer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     contract_start_date = models.DateField()

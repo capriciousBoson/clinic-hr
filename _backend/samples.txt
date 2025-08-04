@@ -1,0 +1,12 @@
+employee_profile  -
+{
+    employer : "",
+    profile: {
+                first_name  : "ashish",
+                last_name   : "shah",
+                dob         : "9/28/1997",
+                ..
+
+            }
+    date_hired : "2/9/2025"
+}
