@@ -285,3 +285,113 @@ class EmployeeProfileListSerializer(serializers.ModelSerializer):
             'date_offboarded'
         ]
     
+
+# ===================== CONTRACTOR SERIALIZERS ===================== #
+
+class ContractorCreateSerializer(serializers.ModelSerializer):
+    """Create Contractor with nested Party"""
+    
+    party = PartyCreateSerializer()
+    employer =  settings.AUTH_USER_MODEL
+    
+    class Meta:
+        model = ContractorProfile
+        fields = [
+            'profile', 'employer', 'contract_start_date',
+            'contract_end_date', 
+        ]
+        extra_kwargs = {
+            'employer': {'required': True},
+            'contract_start_date': {'required': True},
+            'contract_end_date': {'required': True},
+        }
+    
+
+    
+    def validate(self, attrs):
+        """Cross-field validation"""
+        start_date = attrs.get('contract_start_date')
+        end_date = attrs.get('contract_end_date')
+        
+        if start_date and end_date:
+            if end_date <= start_date:
+                raise serializers.ValidationError({
+                    'contract_end_date': 'Contract end date must be after start date.'
+                })
+        
+        return attrs
+
+    
+    @transaction.atomic
+    def create(self, validated_data):
+        """Create Contractor with nested Party"""
+        profile_data = validated_data.pop('profile')
+        
+        # Create Party first
+        party = Party.objects.create(**profile_data)
+        
+        # Create Contractor
+        contractor = ContractorProfile.objects.create(profile=party, **validated_data)
+        
+        return contractor
+
+
+class ContractorListSerializer(serializers.ModelSerializer):
+    """Retrieve Contractor with nested Party details"""
+    
+    party = PartyListSerializer(read_only=True)
+    employer_name =  settings.AUTH_USER_MODEL
+    
+    class Meta:
+        model = ContractorProfile
+        fields = [
+            'id', 'party', 'employer', 'contract_start_date',
+            'contract_end_date',
+        ]
+    
+
+class ContractorUpdateSerializer(serializers.ModelSerializer):
+    """Update Contractor with nested Party updates"""
+    
+    party = PartyUpdateSerializer()
+    
+    class Meta:
+        model = ContractorProfile
+        fields = ['party', 'contract_start_date', 'contract_end_date']
+    
+    def validate(self, attrs):
+        """Cross-field validation"""
+        start_date = attrs.get('contract_start_date', self.instance.contract_start_date)
+        end_date = attrs.get('contract_end_date', self.instance.contract_end_date)
+        
+        if start_date and end_date:
+            if end_date <= start_date:
+                raise serializers.ValidationError({
+                    'contract_end_date': 'Contract end date must be after start date.'
+                })
+        
+        return attrs
+    
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """Update Contractor and nested Party"""
+        party_data = validated_data.pop('profile', None)
+        
+        # Update Party if data provided
+        if party_data:
+            party_serializer = PartyUpdateSerializer(
+                instance.party, 
+                data=party_data, 
+                partial=True
+            )
+            if party_serializer.is_valid(raise_exception=True):
+                party_serializer.save()
+        
+        # Update Contractor
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        return instance
+
+
