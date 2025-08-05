@@ -1,24 +1,23 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
-from django.conf import settings
 from .models import Party, EmployeeProfile, ContractorProfile, Document
 from django.db import transaction
 from datetime import date, timedelta
 import re
 
 
+phone_validator = RegexValidator(
+regex=r'^\d{10}$',
+message="Phone number must be exactly 10 digits."
+)
+
+zip_validator = RegexValidator(
+    regex=r'^\d{5}$',
+    message="ZIP code must be exactly 5 digits."
+)
 
 
 class  BasePartySerializer(serializers.ModelSerializer):
-    phone_validator = RegexValidator(
-    regex=r'^\d{10}$',
-    message="Phone number must be exactly 10 digits."
-    )
-
-    zip_validator = RegexValidator(
-        regex=r'^\d{5}$',
-        message="ZIP code must be exactly 5 digits."
-    )
 
     # Custom validation methods
     def validate_dob(self, value):
@@ -118,11 +117,11 @@ class PartyCreateSerializer(BasePartySerializer):
             },
             'address_zip': {
                 'required': True,
-                'validators': [BasePartySerializer.zip_validator]
+                'validators': [zip_validator]
             },
             'phone_number': {
                 'required': True,
-                'validators': [BasePartySerializer.phone_validator]
+                'validators': [phone_validator]
             },
             'email': {
                 'required': True,
@@ -141,13 +140,13 @@ class PartyUpdateSerializer(BasePartySerializer):
             'marital_status', 'phone_number', 'email', 'dependants', 'active'
         ]
         extra_kwargs = {
-            'first_name': {'min_length': 2},
-            'last_name': {'min_length': 2},
-            'address_full': {'min_length': 10},
-            'address_city': {'min_length': 2},
-            'address_state': {'min_length':2},
-            'address_zip': {'validators': [BasePartySerializer.zip_validator]},
-            'phone_number': {'validators': [BasePartySerializer.phone_validator]},
+            # 'first_name': {'min_length': 2},
+            # 'last_name': {'min_length': 2},
+            # 'address_full': {'min_length': 10},
+            # 'address_city': {'min_length': 2},
+            # 'address_state': {'min_length':2},
+            'address_zip': {'validators': [zip_validator]},
+            'phone_number': {'validators': [phone_validator]},
         }
 
 class PartyListSerializer(serializers.ModelSerializer):
@@ -169,12 +168,12 @@ class PartyListSerializer(serializers.ModelSerializer):
             return f"***-**-{obj.ssn[-4:]}"
         return None
     
+# ===================== EMPLOYEE PROFILE SERIALIZERS ===================== #
 
 class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
     """Create Employee with nested Party"""
     
     party = PartyCreateSerializer()
-    employer = settings.AUTH_USER_MODEL
     class Meta:
         model = EmployeeProfile
         fields = [
@@ -276,7 +275,6 @@ class EmployeeProfileListSerializer(serializers.ModelSerializer):
     """Retrieve Employee with nested Party details"""
     
     party = PartyListSerializer(read_only=True)
-    employer = settings.AUTH_USER_MODEL
     
     class Meta:
         model = EmployeeProfile
@@ -286,13 +284,13 @@ class EmployeeProfileListSerializer(serializers.ModelSerializer):
         ]
     
 
-# ===================== CONTRACTOR SERIALIZERS ===================== #
+# ===================== CONTRACTOR PROFILE SERIALIZERS ===================== #
 
 class ContractorCreateSerializer(serializers.ModelSerializer):
     """Create Contractor with nested Party"""
     
     party = PartyCreateSerializer()
-    employer =  settings.AUTH_USER_MODEL
+    
     
     class Meta:
         model = ContractorProfile
@@ -325,10 +323,10 @@ class ContractorCreateSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         """Create Contractor with nested Party"""
-        profile_data = validated_data.pop('profile')
+        party_data = validated_data.pop('profile')
         
         # Create Party first
-        party = Party.objects.create(**profile_data)
+        party = Party.objects.create(**party_data)
         
         # Create Contractor
         contractor = ContractorProfile.objects.create(profile=party, **validated_data)
@@ -340,7 +338,6 @@ class ContractorListSerializer(serializers.ModelSerializer):
     """Retrieve Contractor with nested Party details"""
     
     party = PartyListSerializer(read_only=True)
-    employer_name =  settings.AUTH_USER_MODEL
     
     class Meta:
         model = ContractorProfile
