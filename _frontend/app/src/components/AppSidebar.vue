@@ -29,7 +29,7 @@ const data = {
         navMain : [
         {
             title: "Home",
-            routeName: "#",
+            routeName: "/",
             icon: Home,
             items: [],
         },
@@ -40,7 +40,7 @@ const data = {
             items: [
             {
                 title: "Onboarding",
-                routeName: "./employee/onboarding",
+                routeName: "/employee/onboarding",
                 icon: UserPlus,
             },
             ],
