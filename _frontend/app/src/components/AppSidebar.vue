@@ -29,25 +29,25 @@ const data = {
         navMain : [
         {
             title: "Home",
-            url: "#",
+            routeName: "#",
             icon: Home,
             items: [],
         },
         {
             title: "Employees",
-            url: "#",
+            routeName: "#",
             icon: Users,
             items: [
             {
                 title: "Onboarding",
-                url: "#",
+                routeName: "./employee/onboarding",
                 icon: UserPlus,
             },
             ],
         },
         {
             title: "Payroll",
-            url: "#",
+            routeName: "#",
             icon: DollarSign,
             items: [],
         },
@@ -88,7 +88,7 @@ function logout() {
             <SidebarMenu>
             <SidebarMenuItem v-for="item in data.navMain" :key="item.title">
                 <SidebarMenuButton as-child>
-                <a :href="item.url" class="font-medium">
+                <a :href="item.routeName" class="font-medium">
                     <component :is="item.icon" class="w-4 h-4" />
                     {{ item.title }}
                 </a>
@@ -96,7 +96,7 @@ function logout() {
                 <SidebarMenuSub v-if="item.items.length">
                 <SidebarMenuSubItem v-for="childItem in item.items" :key="childItem.title">
                     <SidebarMenuSubButton as-child :is-active="childItem.isActive">
-                    <a :href="childItem.url">
+                    <a :href="childItem.routeName">
                         <component :is="childItem.icon" class="w-4 h-4" />
                         {{ childItem.title }}
                     </a>
