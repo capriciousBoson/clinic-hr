@@ -11,6 +11,7 @@ import { toDate } from "reka-ui/date"
 import { computed, h, ref } from "vue"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
     FormControl,
     FormDescription,
@@ -148,12 +149,34 @@ const usStates = [
     { code: "WY", name: "Wyoming" }
 ]
 
+
+const activeType = ref("employee")
+
 </script>
 
 
 <template>
     <div class="flex justify-center  w-full">
     <div class="w-full max-w-4xl bg-white p-10 rounded-xl shadow-md">
+
+        <Tabs v-model="activeType" class="mb-6" default-value="employee">
+            <TabsList class="w-full grid grid-cols-2">
+                <TabsTrigger value="employee">Employee</TabsTrigger>
+                <TabsTrigger value="contractor">Contractor</TabsTrigger>
+            </TabsList>
+            <TabsContent value="employee">
+                <FormField v-slot="{ componentField }" name="employee_hiring_date">
+                    <FormItem>
+                    <FormLabel>Employee Hiring Date</FormLabel>
+                    <FormControl>
+                        <Input type="date" v-bind="componentField" />
+                    </FormControl>
+                    </FormItem>
+                </FormField>
+            </TabsContent>
+        </Tabs>
+
+
         <form @submit.prevent= "onSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField v-slot="{ componentField }" name="firstname">
                 <FormItem>
@@ -425,6 +448,7 @@ const usStates = [
                     </FormControl>
                 </FormItem>
             </FormField>
+
 
         </form>
     </div>
