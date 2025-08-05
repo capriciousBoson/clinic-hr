@@ -69,26 +69,47 @@ class Party(models.Model):
         ('WY', 'Wyoming')
     ]
 
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100,
+                                  blank=False,
+                                  null=False)
+    last_name = models.CharField(max_length=100,
+                                 blank=False,
+                                 null=False)
     dob = models.DateField()
-    ssn = EncryptedCharField(max_length=11) 
-    address_full = models.TextField(max_length=128)
-    address_city = models.CharField(max_length=50)
-    address_zip = models.CharField(max_length=5)
-    address_state = models.CharField(
-        max_length=2,
-        choices=choice_state
-        ) 
+    ssn = EncryptedCharField(max_length=11, 
+                             unique=True,
+                             blank=False,
+                             null=False) 
+    address_full = models.TextField(max_length=128,
+                                    blank=False,
+                                    null=False)
+    address_city = models.CharField(max_length=50,
+                                    blank=False,
+                                    null=False)
+    address_zip = models.CharField(max_length=5,
+                                   blank=False,
+                                   null=False)
+    address_state = models.CharField(max_length=2,
+                                    choices=choice_state,
+                                    blank=False,
+                                    null=False)
+                                     
 
-    marital_status = models.CharField(
-        max_length=8,
-        choices=choice_marital,
-        default="single"
-    )
+    marital_status = models.CharField(max_length=8,
+                                    choices=choice_marital,
+                                    default="single",
+                                    blank=False,
+                                    null=False)
+                                    
 
-    phone_number = models.CharField(max_length=10)
-    email = models.EmailField(max_length=128)
+    phone_number = models.CharField(max_length=10, 
+                                    unique=True,
+                                    blank=False,
+                                    null=False)
+    email = models.EmailField(max_length=128,
+                              unique=True,
+                              blank=False,
+                              null=False)
 
     active = models.BooleanField(default=True)
     
@@ -97,20 +118,28 @@ class Party(models.Model):
 
     dependants = models.SmallIntegerField(default=0)
 
-class Employee(models.Model):
+class EmployeeProfile(models.Model):
     # Employment info
     choice_compensation = [
         ("hourly", "Hourly"),
         ("salaried", "Salaried")
     ]
-    party = models.ForeignKey(Party, on_delete=models.CASCADE)
-    employer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    party = models.ForeignKey(
+        Party, 
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    employer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
 
-    date_hired = models.DateField()
+    date_hired = models.DateField(null=False)
     date_offboarded = models.DateField(null=True, blank=True)
 
-class Contractor(models.Model):
-    profile = models.ForeignKey(Party, on_delete=models.CASCADE)
+class ContractorProfile(models.Model):
+    party = models.ForeignKey(Party, on_delete=models.CASCADE)
     employer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     contract_start_date = models.DateField()
