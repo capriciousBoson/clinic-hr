@@ -1,12 +1,20 @@
-employee_profile  -
 {
-    employer : "",
-    profile: {
-                first_name  : "ashish",
-                last_name   : "shah",
-                dob         : "9/28/1997",
-                ..
-
-            }
-    date_hired : "2/9/2025"
+    "party": {
+        "first_name": "Peen",
+        "last_name": "Saa",
+        "dob": "2001-07-09",
+        "gender": "female",
+        "ssn": "383471289",
+        "address_full": "410 KERBY ST\r\nAPT 340",
+        "address_city": "Suwanee",
+        "address_zip": "66010",
+        "address_state": "GA",
+        "marital_status": "single",
+        "phone_number": "1115589774",
+        "email": "prs771@gmail.com",
+        "dependants": 0
+    },
+    "compensation_type": "hourly",
+    "date_hired": "2025-08-01",
+    "date_offboarded": null
 }

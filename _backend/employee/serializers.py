@@ -83,7 +83,7 @@ class PartyCreateSerializer(BasePartySerializer):
     class Meta:
         model = Party
         fields = [
-            'first_name', 'last_name', 'dob', 'ssn',
+            'first_name', 'last_name', 'dob', 'gender', 'ssn',
             'address_full', 'address_city', 'address_zip', 'address_state',
             'marital_status', 'phone_number', 'email', 'dependants'
         ]
@@ -91,14 +91,29 @@ class PartyCreateSerializer(BasePartySerializer):
             'first_name': {
                 'required': True,
                 'allow_blank': False,
-                'min_length': 2,
-                'max_length': 100
+                # 'min_length': 2,
+                # 'max_length': 100
             },
             'last_name': {
                 'required': True,
                 'allow_blank': False,
-                'min_length': 2,
-                'max_length': 100
+                # 'min_length': 2,
+                # 'max_length': 100
+            },
+            'dob' : {
+                'required': True,
+            },
+            'gender' : {
+                # 'min_length': 4,
+                # 'max_length': 6,
+                'required': True,
+                'allow_blank': False,
+            },
+            'marital_status' : {
+                # 'min_length': 6,
+                # 'max_length': 8,
+                'required': True,
+                'allow_blank': False,
             },
             'ssn': {
                 'write_only': True,
@@ -108,12 +123,12 @@ class PartyCreateSerializer(BasePartySerializer):
             'address_full': {
                 'required': True,
                 'allow_blank': False,
-                'min_length': 10
+                # 'min_length': 10
             },
             'address_city': {
                 'required': True,
                 'allow_blank': False,
-                'min_length': 2
+                # 'min_length': 2
             },
             'address_zip': {
                 'required': True,
@@ -135,7 +150,7 @@ class PartyUpdateSerializer(BasePartySerializer):
     class Meta:
         model = Party
         fields = [
-            'first_name', 'last_name', 'dob',
+            'first_name', 'last_name', 'dob', 'gender',
             'address_full', 'address_city', 'address_zip', 'address_state',
             'marital_status', 'phone_number', 'email', 'dependants', 'active'
         ]
@@ -157,7 +172,7 @@ class PartyListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Party
         fields = [
-            'first_name', 'last_name', 'dob', 'ssn_masked',
+            'first_name', 'last_name', 'dob', 'gender', 'ssn_masked',
             'address_full', 'address_city', 'address_zip', 'address_state',
             'marital_status', 'phone_number', 'email', 'dependants'
         ]
@@ -177,12 +192,13 @@ class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeProfile
         fields = [
-            'party', 'employer',  'date_hired', 
-            'date_offboarded'
+            'party', 'employer', 'compensation_type',
+            'date_hired', 'date_offboarded'
         ]
         extra_kwargs = {
-            'employer': {'required': True},
+            'employer':{'read_only':True},
             'date_hired': {'required': True},
+            'compensation_type':{'required':True},
         }
     
     def validate_date_hired(self, value):
@@ -214,11 +230,15 @@ class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
         """Create Employee with nested Party"""
         party_data = validated_data.pop('party')
         
+        
+        employer = self.context['request'].user
+        print(f"found employer in serializer ---- : {employer}")
+        
         # Create Party first
         party = Party.objects.create(**party_data)
         
         # Create Employee
-        employee = EmployeeProfile.objects.create(party=party, **validated_data)
+        employee = EmployeeProfile.objects.create(party=party,employer=employer, **validated_data)
         
         return employee
     
@@ -229,7 +249,7 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = EmployeeProfile
-        fields = ['party', 'date_hired', 'date_offboarded']
+        fields = ['party', 'compensation_type', 'date_hired', 'date_offboarded']
     
     def validate_date_offboarded(self, value):
         """Validate offboard date"""
@@ -279,7 +299,7 @@ class EmployeeProfileListSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeProfile
         fields = [
-            'id', 'party', 'employer', 'date_hired',
+            'id', 'party','compensation_type', 'employer', 'date_hired',
             'date_offboarded'
         ]
     

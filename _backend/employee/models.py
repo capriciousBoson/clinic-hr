@@ -75,7 +75,12 @@ class Party(models.Model):
     last_name = models.CharField(max_length=100,
                                  blank=False,
                                  null=False)
-    dob = models.DateField()
+    dob = models.DateField(blank=False, 
+                           null=False)
+    gender = models.CharField(max_length=8,
+                              blank=False,
+                              null=False)
+
     ssn = EncryptedCharField(max_length=11, 
                              unique=True,
                              blank=False,
@@ -134,7 +139,10 @@ class EmployeeProfile(models.Model):
         on_delete=models.CASCADE,
         blank=False,
         null=False)
-
+    compensation_type = models.CharField(choices=choice_compensation,
+                                         default="hourly",
+                                         blank=False,
+                                         null=False)
     date_hired = models.DateField(null=False)
     date_offboarded = models.DateField(null=True, blank=True)
 
