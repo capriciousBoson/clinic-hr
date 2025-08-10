@@ -178,6 +178,7 @@ class PartyUpdateSerializer(BasePartySerializer):
     def validate_phone_number(self, value):
         """Custom validation for phone number uniqueness"""
         # First run the phone validator
+        print(f"debug----  instance : {self.instance}, value : {value}")
         phone_validator(value)
         print(f"validating phone_number - {self.instance.phone_number, value}")
         if self.instance and self.instance.phone_number == value:
@@ -429,16 +430,19 @@ class ContractorProfileUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Update Contractor and nested Party"""
         party_data = validated_data.pop('party', None)
+        print(f"this is the party data in contractor update serializer - {party_data}------------")
         
         # Update Party if data provided
         if party_data:
             party_serializer = PartyUpdateSerializer(
-                instance.party, 
+                instance=instance.party, 
                 data=party_data, 
                 partial=True
             )
             if party_serializer.is_valid(raise_exception=True):
                 party_serializer.save()
+        else:
+            print(f"bug in party update serializer-----------------")
         
         # Update Contractor
         for attr, value in validated_data.items():

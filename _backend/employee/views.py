@@ -75,6 +75,10 @@ class ContractorProfileDetailView(APIView):
     def put(self, request, id):
         contractor_profile = get_object_or_404(ContractorProfile, id=id)
         print(f"found the following contractor - {contractor_profile}")
+        print(contractor_profile)  # which model is it?
+        print(type(contractor_profile))
+        print(contractor_profile.party_id)  # FK value from Python
+        print(contractor_profile.party)  # will trigger relation fetch
         serializer = ContractorProfileUpdateSerializer(contractor_profile, 
                                                      data=request.data,
                                                      partial=True)

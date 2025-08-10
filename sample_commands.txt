@@ -1,0 +1,4 @@
+psql -U postgres
+CREATE DATABASE my_database;
+CREATE USER my_admin WITH PASSWORD 'strong_password';
+GRANT ALL PRIVILEGES ON DATABASE my_database TO my_admin;
