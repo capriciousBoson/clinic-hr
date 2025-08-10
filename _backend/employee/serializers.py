@@ -163,6 +163,32 @@ class PartyUpdateSerializer(BasePartySerializer):
             'address_zip': {'validators': [zip_validator]},
             'phone_number': {'validators': [phone_validator]},
         }
+    def validate_email(self, value):
+        """Custom validation for email uniqueness"""
+        if self.instance and self.instance.email == value:
+            # If the email hasn't changed, skip uniqueness validation
+            return value
+        
+        # Check if email already exists for other instances
+        if Party.objects.filter(email=value).exclude(pk=self.instance.pk if self.instance else None).exists():
+            raise serializers.ValidationError("A party with this email already exists.---")
+        
+        return value
+    
+    def validate_phone_number(self, value):
+        """Custom validation for phone number uniqueness"""
+        # First run the phone validator
+        phone_validator(value)
+        print(f"validating phone_number - {self.instance.phone_number, value}")
+        if self.instance and self.instance.phone_number == value:
+            # If the phone number hasn't changed, skip uniqueness validation
+            return value
+        
+        # Check if phone number already exists for other instances
+        if Party.objects.filter(phone_number=value).exclude(pk=self.instance.pk if self.instance else None).exists():
+            raise serializers.ValidationError("A party with this phone number already exists.---")
+        
+        return value
 
 class PartyListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for listing parties"""
@@ -201,17 +227,17 @@ class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
             'compensation_type':{'required':True},
         }
     
-    def validate_date_hired(self, value):
-        """Validate hire date"""
-        if value > date.today():
-            raise serializers.ValidationError("Hire date cannot be in the future.")
-        return value
+    # def validate_date_hired(self, value):
+    #     """Validate hire date"""
+    #     if value > date.today():
+    #         raise serializers.ValidationError("Hire date cannot be in the future.")
+    #     return value
     
-    def validate_date_offboarded(self, value):
-        """Validate offboard date if provided"""
-        if value and value > date.today():
-            raise serializers.ValidationError("Offboard date cannot be in the future.")
-        return value
+    # def validate_date_offboarded(self, value):
+    #     """Validate offboard date if provided"""
+    #     if value and value > date.today():
+    #         raise serializers.ValidationError("Offboard date cannot be in the future.")
+    #     return value
     
     def validate(self, attrs):
         """Cross-field validation"""
@@ -232,7 +258,7 @@ class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
         
         
         employer = self.context['request'].user
-        print(f"found employer in serializer ---- : {employer}")
+        # print(f"found employer in serializer ---- : {employer}")
         
         # Create Party first
         party = Party.objects.create(**party_data)
@@ -251,11 +277,11 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
         model = EmployeeProfile
         fields = ['party', 'compensation_type', 'date_hired', 'date_offboarded']
     
-    def validate_date_offboarded(self, value):
-        """Validate offboard date"""
-        if value and value > date.today():
-            raise serializers.ValidationError("Offboard date cannot be in the future.")
-        return value
+    # def validate_date_offboarded(self, value):
+    #     """Validate offboard date"""
+    #     if value and value > date.today():
+    #         raise serializers.ValidationError("Offboard date cannot be in the future.")
+    #     return value
     
     def validate(self, attrs):
         """Cross-field validation"""
@@ -277,7 +303,7 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
         # Update Party if data provided
         if party_data:
             party_serializer = PartyUpdateSerializer(
-                instance.party, 
+                instance=instance.party, 
                 data=party_data, 
                 partial=True
             )
@@ -288,8 +314,10 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
+
         return instance
+        
+        # return super().update(instance, validated_data)
 
 class EmployeeProfileListSerializer(serializers.ModelSerializer):
     """Retrieve Employee with nested Party details"""
@@ -306,7 +334,7 @@ class EmployeeProfileListSerializer(serializers.ModelSerializer):
 
 # ===================== CONTRACTOR PROFILE SERIALIZERS ===================== #
 
-class ContractorCreateSerializer(serializers.ModelSerializer):
+class ContractorProfileCreateSerializer(serializers.ModelSerializer):
     """Create Contractor with nested Party"""
     
     party = PartyCreateSerializer()
@@ -315,13 +343,13 @@ class ContractorCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractorProfile
         fields = [
-            'profile', 'employer', 'contract_start_date',
+            'party', 'employer', 'contract_start_date',
             'contract_end_date', 
         ]
         extra_kwargs = {
-            'employer': {'required': True},
+            'employer': {'read_only': True},
             'contract_start_date': {'required': True},
-            'contract_end_date': {'required': True},
+            'contract_end_date':{'required':False},
         }
     
 
@@ -330,6 +358,9 @@ class ContractorCreateSerializer(serializers.ModelSerializer):
         """Cross-field validation"""
         start_date = attrs.get('contract_start_date')
         end_date = attrs.get('contract_end_date')
+
+        if not end_date:
+            return attrs
         
         if start_date and end_date:
             if end_date <= start_date:
@@ -343,18 +374,20 @@ class ContractorCreateSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         """Create Contractor with nested Party"""
-        party_data = validated_data.pop('profile')
+        party_data = validated_data.pop('party')
         
         # Create Party first
         party = Party.objects.create(**party_data)
+
+        employer = self.context['request'].user
         
         # Create Contractor
-        contractor = ContractorProfile.objects.create(profile=party, **validated_data)
+        contractor = ContractorProfile.objects.create(party=party, employer=employer,**validated_data)
         
         return contractor
 
 
-class ContractorListSerializer(serializers.ModelSerializer):
+class ContractorProfileListSerializer(serializers.ModelSerializer):
     """Retrieve Contractor with nested Party details"""
     
     party = PartyListSerializer(read_only=True)
@@ -367,7 +400,7 @@ class ContractorListSerializer(serializers.ModelSerializer):
         ]
     
 
-class ContractorUpdateSerializer(serializers.ModelSerializer):
+class ContractorProfileUpdateSerializer(serializers.ModelSerializer):
     """Update Contractor with nested Party updates"""
     
     party = PartyUpdateSerializer()
@@ -380,6 +413,9 @@ class ContractorUpdateSerializer(serializers.ModelSerializer):
         """Cross-field validation"""
         start_date = attrs.get('contract_start_date', self.instance.contract_start_date)
         end_date = attrs.get('contract_end_date', self.instance.contract_end_date)
+
+        if not end_date:
+            return attrs
         
         if start_date and end_date:
             if end_date <= start_date:
@@ -392,7 +428,7 @@ class ContractorUpdateSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         """Update Contractor and nested Party"""
-        party_data = validated_data.pop('profile', None)
+        party_data = validated_data.pop('party', None)
         
         # Update Party if data provided
         if party_data:

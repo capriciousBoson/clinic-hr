@@ -18,3 +18,23 @@
     "date_hired": "2025-08-01",
     "date_offboarded": null
 }
+
+{
+    "party": {
+        "first_name": "test",
+        "last_name": "contractor",
+        "dob": "2004-07-09",
+        "gender": "male",
+        "ssn": "383471000",
+        "address_full": "410 KERBY ST\r\nAPT 210",
+        "address_city": "Arlington",
+        "address_zip": "76013",
+        "address_state": "TX",
+        "marital_status": "single",
+        "phone_number": "1114559774",
+        "email": "test_contractor_01@gmail.com",
+        "dependants": 1
+    },
+    "contract_start_date": "2025-08-01",
+    "contract_end_date": null
+}

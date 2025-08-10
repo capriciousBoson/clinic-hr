@@ -150,8 +150,8 @@ class ContractorProfile(models.Model):
     party = models.ForeignKey(Party, on_delete=models.CASCADE)
     employer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    contract_start_date = models.DateField()
-    contract_end_date = models.DateField()
+    contract_start_date = models.DateField(null=False)
+    contract_end_date = models.DateField(null=True, blank=True)
 
 class Document(models.Model):
     owner = models.ForeignKey(Party, on_delete=models.CASCADE)

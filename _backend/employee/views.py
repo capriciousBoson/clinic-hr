@@ -2,14 +2,14 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import EmployeeProfile
+from .models import EmployeeProfile, ContractorProfile
 from .serializers import (
                 EmployeeProfileCreateSerializer,
                 EmployeeProfileListSerializer,
                 EmployeeProfileUpdateSerializer,
-                ContractorCreateSerializer,
-                ContractorListSerializer,
-                ContractorUpdateSerializer)
+                ContractorProfileCreateSerializer,
+                ContractorProfileListSerializer,
+                ContractorProfileUpdateSerializer)
 
 class EmployeeProfileListCreateView(APIView):
     def get(self, request):
@@ -46,5 +46,40 @@ class EmployeeProfileDetailView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ContractorProfileListCreateView(APIView):
+    def get(self, request):
+        contractor_profiles = ContractorProfile.objects.all()
+        serializer = ContractorProfileListSerializer(contractor_profiles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+
+        # print(f"request.data - {request.data}")
+        serializer = ContractorProfileCreateSerializer(data=request.data, context={'request': request})
+        # print(f"found user - {request.user}")
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(f"serializer errors - {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ContractorProfileDetailView(APIView):
+    def get(self, request, id):
+        contractor_profile = get_object_or_404(ContractorProfile, id=id)
+        serializer = ContractorProfileListSerializer(contractor_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request, id):
+        contractor_profile = get_object_or_404(ContractorProfile, id=id)
+        print(f"found the following contractor - {contractor_profile}")
+        serializer = ContractorProfileUpdateSerializer(contractor_profile, 
+                                                     data=request.data,
+                                                     partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+   
