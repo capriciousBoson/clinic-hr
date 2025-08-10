@@ -174,6 +174,26 @@ const activeType = ref("employee")
                     </FormItem>
                 </FormField>
             </TabsContent>
+
+            <TabsContent value="contractor">
+                <FormField v-slot="{ componentField }" name="contractor_start_date">
+                    <FormItem>
+                    <FormLabel>Contractor Start Date</FormLabel>
+                    <FormControl>
+                        <Input type="date" v-bind="componentField" />
+                    </FormControl>
+                    </FormItem>
+                </FormField>
+
+                <FormField v-slot="{ componentField }" name="contractor_end_date">
+                    <FormItem>
+                    <FormLabel>Contractor End Date</FormLabel>
+                    <FormControl>
+                        <Input type="date" v-bind="componentField" />
+                    </FormControl>
+                    </FormItem>
+                </FormField>
+</TabsContent>
         </Tabs>
 
 
