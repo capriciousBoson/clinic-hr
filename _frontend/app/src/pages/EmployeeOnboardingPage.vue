@@ -70,9 +70,7 @@ const formSchema = toTypedSchema(z.object({
     ssn: z
         .string()
         .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in the format XXX-XX-XXXX"),
-    dependants_count: z
-        .number({ invalid_type_error: "Dependants must be a number" })
-        .min(0, "Minimum value is 0"),
+    
 }))
 
 const placeholder = ref()
@@ -82,15 +80,15 @@ const { handleSubmit, setFieldValue, values } = useForm({
 })
 
 const value = computed({
-  get: () => values.dob ? parseDate(values.dob) : undefined,
-  set: val => {
-    if(val) {
-      setFieldValue('dob', val.toString());
-    } else {
-      setFieldValue('dob', undefined);
-    }
-  },
-})
+    get: () => values.dob ? parseDate(values.dob) : undefined,
+    set: val => {
+        if(val) {
+        setFieldValue('dob', val.toString());
+        } else {
+        setFieldValue('dob', undefined);
+        }
+    },
+    })
 
 const onSubmit = handleSubmit((values) => {
     console.log("Submitting")
@@ -171,6 +169,36 @@ const activeType = ref("employee")
                     <FormControl>
                         <Input type="date" v-bind="componentField" />
                     </FormControl>
+                    </FormItem>
+                </FormField>
+
+                <FormField v-slot="{ value, componentField }" name="compensation_type">
+                    <FormItem>
+                        <FormLabel>Compensation Type</FormLabel>
+                        <FormControl>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                            <Button
+                                variant="outline"
+                                :class="{
+                                'w-full justify-start font-normal': true,
+                                'text-muted-foreground': !value, // grey when no value
+                                }"
+                            >
+                                {{ value || 'Select compensation type' }}
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                            <DropdownMenuItem @click="setFieldValue('compensation_type', 'Salaried')">
+                                Salaried
+                            </DropdownMenuItem>
+                            <DropdownMenuItem @click="setFieldValue('compensation_type', 'Hourly')">
+                                Hourly
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </FormControl>
+                        <FormMessage />
                     </FormItem>
                 </FormField>
             </TabsContent>
@@ -332,43 +360,6 @@ const activeType = ref("employee")
                 </FormItem>
             </FormField>
 
-
-
-
-            <FormField v-slot="{ value, componentField }" name="compensation_type">
-                <FormItem>
-                    <FormLabel>Compensation Type</FormLabel>
-                    <FormControl>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger as-child>
-                        <Button
-                            variant="outline"
-                            :class="{
-                            'w-full justify-start font-normal': true,
-                            'text-muted-foreground': !value, // grey when no value
-                            }"
-                        >
-                            {{ value || 'Select compensation type' }}
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                        <DropdownMenuItem @click="setFieldValue('compensation_type', 'Salaried')">
-                            Salaried
-                        </DropdownMenuItem>
-                        <DropdownMenuItem @click="setFieldValue('compensation_type', 'Hourly')">
-                            Hourly
-                        </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                </FormField>
-
-
-        
-
-
             <FormField v-slot="{ value, componentField }" name="marital_status">
                 <FormItem>
                     <FormLabel>Marital Status</FormLabel>
@@ -469,6 +460,11 @@ const activeType = ref("employee")
                 </FormItem>
             </FormField>
 
+            <div class="col-span-2 flex justify-center">
+                <Button type="submit" class="px-6">
+                    Submit
+                </Button>
+            </div>
 
         </form>
     </div>
