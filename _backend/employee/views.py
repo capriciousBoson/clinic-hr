@@ -81,7 +81,8 @@ class ContractorProfileDetailView(APIView):
         print(contractor_profile.party)  # will trigger relation fetch
         serializer = ContractorProfileUpdateSerializer(contractor_profile, 
                                                      data=request.data,
-                                                     partial=True)
+                                                     partial=True,
+                                                     context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
