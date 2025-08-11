@@ -3,7 +3,7 @@ import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 
-
+import axios from "axios";  
 import {  CalendarDate, DateFormatter, getLocalTimeZone, parseDate, today } from "@internationalized/date"
 import { Button } from '@/components/ui/button'
 import { CalendarIcon } from "lucide-vue-next"
@@ -43,36 +43,42 @@ const df = new DateFormatter("en-US", {
     dateStyle: "long",
 })
 
-const formSchema = toTypedSchema(z.object({
+const activeTab = ref("employee")
+
+
+const base = z.object({
     firstname: z.string().min(1, "First name is required"),
     lastname: z.string().min(1, "Last name is required"),
     email: z.string().email("Invalid email address"),
-    compensation_type: z.enum(['Salaried', 'Hourly'], {
-        required_error: "Compensation type is required",
-        }),
-    mobile: z
-        .string()
-        .regex(
-        /^(\+1)?[2-9]\d{2}[2-9](?!11)\d{6}$/,
-        "Invalid US mobile number"
-        ),
+    mobile: z.string().regex(/^(\+1)?[2-9]\d{2}[2-9](?!11)\d{6}$/, "Invalid US mobile number"),
     city: z.string().min(1, "City is required"),
-    dob: z.string().refine(v => v, { message: "A date of birth is required." }),
+    dob: z.string().min(1, "DOB is required"),
     address_full: z.string().min(1, "Address is required"),
     address_zip: z.string().min(1, "Zip code is required"),
     state: z.string().min(1, "State is required"),
-    marital_status: z.enum(["Single", "Married", "Divorced"], {
-    errorMap: () => ({ message: "Select a valid marital status." }),
-    }),
-    gender: z.enum(["Male", "Female", "Other"], {
-    errorMap: () => ({ message: "Select valid Gender." }),
-    }),
-    ssn: z
-        .string()
-        .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in the format XXX-XX-XXXX"),
-    
-}))
+    marital_status: z.enum(["Single", "Married", "Divorced"], { errorMap: () => ({ message: "Select a valid marital status." }) }),
+    gender: z.enum(["Male", "Female", "Other"], { errorMap: () => ({ message: "Select valid Gender." }) }),
+    ssn: z.string().regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be XXX-XX-XXXX"),
+    dependants_count: z.number().int().nonnegative().optional().default(0),
+})
 
+const employeeOnly = z.object({
+    compensation_type: z.enum(['Salaried', 'Hourly'], { required_error: "Compensation type is required" }),
+    employee_hiring_date: z.string().min(1, "Hire date is required"),
+})
+
+const contractorOnly = z.object({
+    contract_start_date: z.string().min(1, "Contract start date is required"),
+    contract_end_date: z.string().optional().nullable(),
+})
+
+const formSchema = computed(() =>
+    toTypedSchema(
+        activeTab.value === 'employee'
+        ? base.merge(employeeOnly)
+        : base.merge(contractorOnly)
+    )
+)
 const placeholder = ref()
 
 const { handleSubmit, setFieldValue, values } = useForm({
@@ -90,9 +96,7 @@ const value = computed({
     },
     })
 
-const onSubmit = handleSubmit((values) => {
-    console.log("Submitting")
-})
+
 
 const usStates = [
     { code: "AL", name: "Alabama" },
@@ -148,7 +152,71 @@ const usStates = [
 ]
 
 
-const activeType = ref("employee")
+const s = (v: unknown) => (v == null ? "" : String(v)).trim();
+const lower = (v: unknown) => s(v).toLowerCase();
+
+const onSubmit = handleSubmit(async (values) => {
+    try {
+        console.log("onSubmit fired", values);
+
+        const party = {
+        first_name: s(values.firstname),
+        last_name: s(values.lastname),
+        dob: s('2004-04-03'), // yyyy-mm-dd from your date picker
+        gender: lower(values.gender),
+        ssn: s(values.ssn).replace(/-/g, ""),
+        address_full: s(values.address_full),
+        address_city: s(values.city),
+        address_zip: s(values.address_zip),
+        address_state: s(values.state),
+        marital_status: lower(values.marital_status),
+        phone_number: s(values.mobile),
+        email: s(values.email),
+        dependants: Number(values.dependants_count ?? 0),
+        };
+
+        const payload =
+        activeTab.value === "employee"
+            ? {
+                party,
+                compensation_type: lower(values.compensation_type),
+                date_hired: s(values.employee_hiring_date) || null,
+                date_offboarded: null,
+            }
+            : {
+                party,
+                contract_start_date: s(values.contract_start_date) || null,
+                contract_end_date: s(values.contract_end_date) || null,
+            };
+
+        console.log("Submitting payload:", payload);
+
+
+        const apiBaseUrl = "http://127.0.0.1:8000/api"; // from .env
+        const endpoint =
+        activeTab.value === "employee"
+            ? `${apiBaseUrl}/emp/employeeapi/`
+            : `${apiBaseUrl}/emp/contractorapi/`;
+        console.log("Endpoint---------------------",endpoint)
+        const res = await axios.post(endpoint, payload, {
+         auth: {
+            username: 'prabh',  
+            password: 'wasd1234'  
+        },
+        headers: {
+            "Content-Type": "application/json",
+        },
+        });
+
+    console.log("API Response:", res.data);
+    alert("Form submitted successfully!");
+    } catch (err) {
+    console.error("Submit error:", err);
+    alert("Something went wrong. See console for details.");
+    }
+});
+
+
 
 </script>
 
@@ -157,7 +225,7 @@ const activeType = ref("employee")
     <div class="flex justify-center  w-full">
     <div class="w-full max-w-4xl bg-white p-10 rounded-xl shadow-md">
 
-        <Tabs v-model="activeType" class="mb-6" default-value="employee">
+        <Tabs v-model="activeTab" class="mb-6" default-value="employee">
             <TabsList class="w-full grid grid-cols-2">
                 <TabsTrigger value="employee">Employee</TabsTrigger>
                 <TabsTrigger value="contractor">Contractor</TabsTrigger>
@@ -204,7 +272,7 @@ const activeType = ref("employee")
             </TabsContent>
 
             <TabsContent value="contractor">
-                <FormField v-slot="{ componentField }" name="contractor_start_date">
+                <FormField v-slot="{ componentField }" name="contract_start_date">
                     <FormItem>
                     <FormLabel>Contractor Start Date</FormLabel>
                     <FormControl>
@@ -213,7 +281,7 @@ const activeType = ref("employee")
                     </FormItem>
                 </FormField>
 
-                <FormField v-slot="{ componentField }" name="contractor_end_date">
+                <FormField v-slot="{ componentField }" name="contract_end_date">
                     <FormItem>
                     <FormLabel>Contractor End Date</FormLabel>
                     <FormControl>

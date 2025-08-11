@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Home, LogOut, Users, DollarSign, UserPlus } from "lucide-vue-next"
+import { Home, LogOut, Users, DollarSign, UserPlus, UserCog } from "lucide-vue-next"
 import {
     Sidebar,
     SidebarContent,
@@ -42,6 +42,11 @@ const data = {
                 title: "Onboarding",
                 routeName: "/employee/onboarding",
                 icon: UserPlus,
+            },
+            {
+                title: "Manage Employees",
+                routeName: "/employee/manage",
+                icon: UserCog,
             },
             ],
         },
