@@ -178,7 +178,7 @@ class PartyUpdateSerializer(BasePartySerializer):
     def validate_phone_number(self, value):
         """Custom validation for phone number uniqueness"""
         # First run the phone validator
-        print(f"debug----  instance : {self.instance}, value : {value}")
+        # print(f"debug----  instance : {self.instance}, value : {value}")
         phone_validator(value)
         # print(f"validating phone_number - {self.instance.phone_number, value}")
         if self.instance and self.instance.phone_number == value:
@@ -199,9 +199,9 @@ class PartyListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Party
         fields = [
-            'first_name', 'last_name', 'dob', 'gender', 'ssn_masked',
+            'id','first_name', 'last_name', 'dob', 'gender', 'ssn_masked',
             'address_full', 'address_city', 'address_zip', 'address_state',
-            'marital_status', 'phone_number', 'email', 'dependants'
+            'marital_status', 'phone_number', 'email', 'dependants', 'active'
         ]
 
     def get_ssn_masked(self, obj):

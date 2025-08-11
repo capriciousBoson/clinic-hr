@@ -38,3 +38,14 @@
     "contract_start_date": "2025-08-01",
     "contract_end_date": null
 }
+
+
+#employee offboarding- 
+{
+    "party": {
+          "active": false
+    },
+    "compensation_type": "hourly",
+    "date_hired": "2025-08-01",
+    "date_offboarded": "2025-08-10"
+}
