@@ -180,7 +180,7 @@ class PartyUpdateSerializer(BasePartySerializer):
         # First run the phone validator
         print(f"debug----  instance : {self.instance}, value : {value}")
         phone_validator(value)
-        print(f"validating phone_number - {self.instance.phone_number, value}")
+        # print(f"validating phone_number - {self.instance.phone_number, value}")
         if self.instance and self.instance.phone_number == value:
             # If the phone number hasn't changed, skip uniqueness validation
             return value
@@ -273,6 +273,13 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
     """Update Employee with nested Party updates"""
     
     party = PartyUpdateSerializer()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['party'] = PartyUpdateSerializer(
+            instance=getattr(self.instance, 'party', None),
+            required=False,
+            context=self.context,
+        )
     
     class Meta:
         model = EmployeeProfile
@@ -405,10 +412,26 @@ class ContractorProfileUpdateSerializer(serializers.ModelSerializer):
     """Update Contractor with nested Party updates"""
     
     party = PartyUpdateSerializer()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['party'] = PartyUpdateSerializer(
+            instance=getattr(self.instance, 'party', None),
+            required=False,
+            context=self.context,
+        )
     
     class Meta:
         model = ContractorProfile
         fields = ['party', 'contract_start_date', 'contract_end_date']
+    
+    # def get_fields(self):
+    #     fields = super().get_fields()
+    #     fields['party'] = PartyUpdateSerializer(
+    #         instance=getattr(self.instance, 'party', None),
+    #         required=False,
+    #         context=self.context,
+    #     )
+    #     return fields
     
     def validate(self, attrs):
         """Cross-field validation"""
