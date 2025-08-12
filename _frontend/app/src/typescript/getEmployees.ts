@@ -18,4 +18,11 @@ export async function getEmployee(id: number | string) {
 }
 
 
+export async function updateEmployee(id: number | string, payload: any) {
+  const { data } = await api.put(`/emp/employeeapi/${id}/`, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return data;
+} 
+
 

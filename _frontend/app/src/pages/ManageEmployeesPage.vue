@@ -8,6 +8,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil, UserMinus } from "lucide-vue-next";
 import EmployeeDetailsCard from "@/pages/EmployeeDetailsCard.vue";
+import EmployeeEditCard from "@/pages/EmployeeEditCard.vue";
 
 
 type Party = {
@@ -58,6 +59,15 @@ function onView(row: any) {
     showDetails.value = true;
 }
 
+const showEdit = ref(false);
+
+function onEdit(row: any) {
+    if (!row?.id) return;
+    selectedId.value = Number(row.id);
+    selectedRow.value = row;        // optional seed
+    showEdit.value = true;
+}
+
 </script>
 
 <template>
@@ -94,7 +104,7 @@ function onView(row: any) {
                     <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onView(e)">
                     <Eye class="w-4 h-4" /><span class="hidden sm:inline">View Details</span>
                     </Button>
-                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onEdit(e.id)">
+                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onEdit(e)">
                     <Pencil class="w-4 h-4" /><span class="hidden sm:inline">Edit Details</span>
                     </Button>
                     <Button variant="destructive" size="sm" class="inline-flex items-center gap-1" @click="onOffboard(e.id)">
@@ -110,6 +120,12 @@ function onView(row: any) {
 
     <EmployeeDetailsCard
         v-model:open="showDetails"
+        :employee-id="selectedId"
+        :initial="selectedRow"
+    />
+
+    <EmployeeEditCard
+        v-model:open="showEdit"
         :employee-id="selectedId"
         :initial="selectedRow"
     />
