@@ -49,3 +49,12 @@
     "date_hired": "2025-08-01",
     "date_offboarded": "2025-08-10"
 }
+
+{
+    "party":1,
+    "document_type" : "resume",
+    "document_name" : "test-emp-resume",
+    "document" : "C:\Users\ASUS\Downloads\Resume_Ashish_Shah.pdf",
+    "expiry_date" : "2025-12-1",
+
+}

@@ -533,18 +533,30 @@ class DocumentCreateSerializer(serializers.ModelSerializer):
         return file
 
     def create(self, validated_data):
+        upload = validated_data.pop("document")
+
         # Stamp who uploaded
         user = self.context.get("request").user if self.context.get("request") else None
         if user and user.is_authenticated:
             validated_data["uploaded_by"] = user
+        
+        temp = Document(**validated_data)
+        temp.version = next_version_for(temp)
+        temp.document = None
+        temp.save()  
+
+        # Build final path with party_id + pk + versioned filename
+        final_path = temp.build_final_document_path(upload.name)
 
         # Auto version (only if not explicitly provided—which it isn't by default)
         # Construct a temporary Document-like object for grouping
-        temp = Document(**validated_data)
-        validated_data["version"] = next_version_for(temp)
+        # Save file into the final path
+        storage = temp.document.storage  # respects DEFAULT_FILE_STORAGE
+        saved_name = storage.save(final_path, upload)
+        temp.document.name = saved_name
+        temp.save(update_fields=["document"])
 
-        return super().create(validated_data)
-
+        return temp
 
 class DocumentUpdateSerializer(serializers.ModelSerializer):
     # Prevent changing party via serializer-level write-protection
@@ -580,20 +592,31 @@ class DocumentUpdateSerializer(serializers.ModelSerializer):
         return file
 
     def update(self, instance, validated_data):
-        # If a new file is uploaded, bump version
-        new_file = validated_data.get("document", None)
-        if new_file is not None:
-            # If filename or content is being replaced, increment version
-            validate_upload(new_file)
-            instance.version = instance.version + 1
+        upload = validated_data.pop("document", None)
 
-        # Handle soft delete: if deleted_at is set (non-null) and deleted_by empty, stamp current user
+        # If a new file is provided, bump version and re-save to a new versioned path
+        if upload is not None:
+            instance.version = instance.version + 1
+            # Save instance to persist version bump (no file yet)
+            instance.save(update_fields=["version"])
+
+            final_path = instance.build_final_document_path(upload.name)
+            storage = instance.document.storage
+            saved_name = storage.save(final_path, upload)
+            instance.document.name = saved_name
+
+        # Handle soft-delete stamping (optional)
         if "deleted_at" in validated_data and validated_data["deleted_at"] and not instance.deleted_by:
             user = self.context.get("request").user if self.context.get("request") else None
             if user and user.is_authenticated:
-                validated_data["deleted_by"] = user  # allowed because field is read-only to clients
+                instance.deleted_by = user
 
-        return super().update(instance, validated_data)
+        # Update non-file fields
+        for k, v in validated_data.items():
+            setattr(instance, k, v)
+
+        instance.save()
+        return instance
     
 class DocumentListSerializer(serializers.ModelSerializer):
     document_url = serializers.SerializerMethodField()

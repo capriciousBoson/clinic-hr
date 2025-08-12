@@ -3,7 +3,7 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from django.shortcuts import get_object_or_404
-from .models import EmployeeProfile, ContractorProfile, Document
+from .models import Party, EmployeeProfile, ContractorProfile, Document
 from .serializers import (
                 EmployeeProfileCreateSerializer,
                 EmployeeProfileListSerializer,
@@ -101,7 +101,19 @@ class DocumentListCreateView(APIView):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get(self, request):
-        docs = Document.objects.all().order_by("-uploaded_at", "-id")
+        party_id = request.query_params.get("party")
+        if not party_id:
+            return Response({"detail": "Query param 'party' is required, e.g. /api/emp/documentapi/?party=1"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            party_id = int(party_id)
+        except (TypeError, ValueError):
+            return Response({"detail": "Query param 'party' must be an integer."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # Ensure the party exists (gives a clean 404 if not)
+        get_object_or_404(Party, pk=party_id)
+
+        docs = Document.objects.filter(party_id=party_id).order_by("-uploaded_at", "-id")
         serializer = DocumentListSerializer(docs, many=True, context={"request": request})
         return Response(serializer.data)
 
@@ -127,8 +139,8 @@ class DocumentDetailView(APIView):
         serializer = DocumentListSerializer(doc, context={"request": request})
         return Response(serializer.data)
 
-    def put(self, request, pk):
-        doc = get_object_or_404(Document, pk=pk)
+    def put(self, request, id):
+        doc = get_object_or_404(Document, pk=id)
         serializer = DocumentUpdateSerializer(
                                                 doc, 
                                                 data=request.data, 
