@@ -7,6 +7,7 @@ import { getEmployees } from "@/typescript/getEmployees";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil, UserMinus } from "lucide-vue-next";
+import EmployeeDetailsCard from "@/pages/EmployeeDetailsCard.vue";
 
 
 type Party = {
@@ -45,6 +46,18 @@ function fmtString(g?: string | null) {
 
 onMounted(load);
 
+
+const showDetails = ref(false);
+const selectedId = ref<number | null>(null);
+const selectedRow = ref<any | null>(null);
+
+function onView(row: any) {
+    if (!row?.id) return;
+    selectedId.value = Number(row.id);
+    selectedRow.value = row;        // optional seed
+    showDetails.value = true;
+}
+
 </script>
 
 <template>
@@ -78,7 +91,7 @@ onMounted(load);
                 <TableCell>{{ fmtString(e.compensation_type) || "—" }}</TableCell>
                 <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onView(e.id)">
+                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onView(e)">
                     <Eye class="w-4 h-4" /><span class="hidden sm:inline">View Details</span>
                     </Button>
                     <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onEdit(e.id)">
@@ -94,4 +107,10 @@ onMounted(load);
         </Table>
         </div>
     </div>
+
+    <EmployeeDetailsCard
+        v-model:open="showDetails"
+        :employee-id="selectedId"
+        :initial="selectedRow"
+    />
 </template>

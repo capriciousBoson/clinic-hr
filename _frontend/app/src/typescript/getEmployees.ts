@@ -12,4 +12,10 @@ export async function getEmployees(params: Record<string, any> = {}) {
   return res.data;
 }
 
+export async function getEmployee(id: number | string) {
+  const { data } = await api.get(`/emp/employeeapi/${id}/`);
+  return data; // single employee object
+}
+
+
 
