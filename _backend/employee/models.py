@@ -154,9 +154,13 @@ class ContractorProfile(models.Model):
     contract_end_date = models.DateField(null=True, blank=True)
 
 class Document(models.Model):
-    owner = models.ForeignKey(Party, on_delete=models.CASCADE)
+    party = models.ForeignKey(
+        Party, 
+        on_delete=models.CASCADE,
+        related_name="documents")
     document_type = models.CharField(max_length=64)
     document_name = models.CharField(max_length=128)
+    document = models.FileField(upload_to='documents/')
     version = models.PositiveIntegerField(default=1)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
