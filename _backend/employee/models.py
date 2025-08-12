@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from encrypted_model_fields.fields import EncryptedCharField
+from pathlib import Path
 
 
 class Party(models.Model):
@@ -154,9 +155,13 @@ class ContractorProfile(models.Model):
     contract_end_date = models.DateField(null=True, blank=True)
 
 class Document(models.Model):
-    owner = models.ForeignKey(Party, on_delete=models.CASCADE)
+    party = models.ForeignKey(
+        Party, 
+        on_delete=models.CASCADE,
+        related_name="documents")
     document_type = models.CharField(max_length=64)
     document_name = models.CharField(max_length=128)
+    document = models.FileField(upload_to='documents/_staging/')
     version = models.PositiveIntegerField(default=1)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -177,3 +182,13 @@ class Document(models.Model):
         null=True, 
         blank=True, 
         related_name='deleted_documents')
+    
+    def build_final_document_path(self, original_name: str) -> str:
+        """
+        Final path: documents/<party_id>/<document_id>/<base>_v####.<ext>
+        Example: documents/42/105/passport_v0003.pdf
+        """
+        p = Path(original_name)
+        stem = p.stem
+        ext = p.suffix.lower()
+        return f"documents/{self.party_id}/{self.pk}/{stem}_v{self.version:04d}{ext}"
