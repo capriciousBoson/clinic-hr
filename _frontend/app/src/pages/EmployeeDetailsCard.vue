@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { getEmployee } from "@/typescript/getEmployees"
+import { getEmployee } from "@/typescript/getEmployees" 
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -82,24 +82,24 @@ const Labeled = {
 
 
 const details = computed<[string, any][]>(() => {
-  if (!emp.value) return [];
-  const e = emp.value;
-  return [
-    ["ID", e.id],
-    ["First name", e.party?.first_name],
-    ["Last name", e.party?.last_name],
-    ["Email", e.party?.email],
-    ["Mobile", e.party?.phone_number],
-    ["DOB", fmtDate(e.party?.dob)],
-    ["Date started", fmtDate(e.date_hired)],
-    ["Gender", titleCase(e.party?.gender)],
-    ["Payment type", titleCase(e.compensation_type)],
-    ["Address", e.party?.address_full],
-    ["City", e.party?.address_city],
-    ["State", e.party?.address_state],
-    ["ZIP", e.party?.address_zip],
-    ["Date offboarded", fmtDate(e.date_offboarded)],
-  ];
+    if (!emp.value) return [];
+    const e = emp.value;
+    return [
+        ["ID", e.id],
+        ["First name", e.party?.first_name],
+        ["Last name", e.party?.last_name],
+        ["Email", e.party?.email],
+        ["Mobile", e.party?.phone_number],
+        ["DOB", fmtDate(e.party?.dob)],
+        ["Date started", fmtDate(e.date_hired)],
+        ["Gender", titleCase(e.party?.gender)],
+        ["Payment type", titleCase(e.compensation_type)],
+        ["Address", e.party?.address_full],
+        ["City", e.party?.address_city],
+        ["State", e.party?.address_state],
+        ["ZIP", e.party?.address_zip],
+        ["Date offboarded", fmtDate(e.date_offboarded)],
+    ];
 });
 
 
