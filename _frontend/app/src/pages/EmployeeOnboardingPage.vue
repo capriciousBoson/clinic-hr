@@ -9,9 +9,7 @@ import { Button } from '@/components/ui/button'
 import { CalendarIcon } from "lucide-vue-next"
 import { toDate } from "reka-ui/date"
 import { computed, h, ref } from "vue"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import RequiredLabel from '@/components/ui/required-label.vue'
 import {
     FormControl,
     FormDescription,
@@ -43,42 +41,34 @@ const df = new DateFormatter("en-US", {
     dateStyle: "long",
 })
 
-const activeTab = ref("employee")
 
-
-const base = z.object({
-    firstname: z.string().min(1, "First name is required"),
-    lastname: z.string().min(1, "Last name is required"),
-    email: z.string().email("Invalid email address"),
-    mobile: z.string().regex(/^(\+1)?[2-9]\d{2}[2-9](?!11)\d{6}$/, "Invalid US mobile number"),
-    city: z.string().min(1, "City is required"),
-    dob: z.string().min(1, "DOB is required"),
-    address_full: z.string().min(1, "Address is required"),
-    address_zip: z.string().min(1, "Zip code is required"),
-    state: z.string().min(1, "State is required"),
-    marital_status: z.enum(["Single", "Married", "Divorced"], { errorMap: () => ({ message: "Select a valid marital status." }) }),
-    gender: z.enum(["Male", "Female", "Other"], { errorMap: () => ({ message: "Select valid Gender." }) }),
-    ssn: z.string().regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be XXX-XX-XXXX"),
-    dependants_count: z.number().int().nonnegative().optional().default(0),
-})
-
-const employeeOnly = z.object({
-    compensation_type: z.enum(['Salaried', 'Hourly'], { required_error: "Compensation type is required" }),
-    employee_hiring_date: z.string().min(1, "Hire date is required"),
-})
-
-const contractorOnly = z.object({
-    contract_start_date: z.string().min(1, "Contract start date is required"),
-    contract_end_date: z.string().optional().nullable(),
-})
-
-const formSchema = computed(() =>
-    toTypedSchema(
-        activeTab.value === 'employee'
-        ? base.merge(employeeOnly)
-        : base.merge(contractorOnly)
-    )
+const formSchema = toTypedSchema(
+    z.object({
+        firstname: z.string().min(1, "First name is required"),
+        lastname: z.string().min(1, "Last name is required"),
+        email: z.string().email("Invalid email address"),
+        mobile: z.string().regex(/^(\+1)?[2-9]\d{2}[2-9](?!11)\d{6}$/, "Invalid US mobile number"),
+        city: z.string().min(1, "City is required"),
+        dob: z.string().min(0, "DOB is required"),
+        address_full: z.string().min(1, "Address is required"),
+        address_zip: z.string().min(1, "Zip code is required"),
+        state: z.string().min(1, "State is required"),
+        marital_status: z.enum(["Single", "Married", "Divorced"], {
+        errorMap: () => ({ message: "Select a valid marital status." })
+        }),
+        gender: z.enum(["Male", "Female", "Other"], {
+        errorMap: () => ({ message: "Select valid Gender." })
+        }),
+        ssn: z.string().regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be XXX-XX-XXXX"),
+        // Use z.coerce.number so inputs from text/number fields validate correctly
+        dependants_count: z.coerce.number().int().min(0).max(10).default(0),
+        compensation_type: z.enum(["Salaried", "Hourly"], {
+        required_error: "Compensation type is required"
+        }),
+        employee_hiring_date: z.string().min(1, "Hire date is required")
+    })
 )
+
 const placeholder = ref()
 
 const { handleSubmit, setFieldValue, values } = useForm({
@@ -162,7 +152,7 @@ const onSubmit = handleSubmit(async (values) => {
         const party = {
         first_name: s(values.firstname),
         last_name: s(values.lastname),
-        dob: s('2004-04-03'), // yyyy-mm-dd from your date picker
+        dob: s(values.dob), // yyyy-mm-dd from your date picker
         gender: lower(values.gender),
         ssn: s(values.ssn).replace(/-/g, ""),
         address_full: s(values.address_full),
@@ -172,31 +162,21 @@ const onSubmit = handleSubmit(async (values) => {
         marital_status: lower(values.marital_status),
         phone_number: s(values.mobile),
         email: s(values.email),
-        dependants: Number(values.dependants_count ?? 0),
+        dependants: Number(values.dependants_count ?? 0)
         };
 
-        const payload =
-        activeTab.value === "employee"
-            ? {
+        const payload = {
                 party,
                 compensation_type: lower(values.compensation_type),
                 date_hired: s(values.employee_hiring_date) || null,
                 date_offboarded: null,
-            }
-            : {
-                party,
-                contract_start_date: s(values.contract_start_date) || null,
-                contract_end_date: s(values.contract_end_date) || null,
             };
 
         console.log("Submitting payload:", payload);
 
 
         const apiBaseUrl = "http://127.0.0.1:8000/api"; // from .env
-        const endpoint =
-        activeTab.value === "employee"
-            ? `${apiBaseUrl}/emp/employeeapi/`
-            : `${apiBaseUrl}/emp/contractorapi/`;
+        const endpoint = `${apiBaseUrl}/emp/employeeapi/`
         console.log("Endpoint---------------------",endpoint)
         const res = await axios.post(endpoint, payload, {
          auth: {
@@ -224,79 +204,10 @@ const onSubmit = handleSubmit(async (values) => {
 <template>
     <div class="flex justify-center  w-full">
     <div class="w-full max-w-4xl bg-white p-10 rounded-xl shadow-md">
-
-        <Tabs v-model="activeTab" class="mb-6" default-value="employee">
-            <TabsList class="w-full grid grid-cols-2">
-                <TabsTrigger value="employee">Employee</TabsTrigger>
-                <TabsTrigger value="contractor">Contractor</TabsTrigger>
-            </TabsList>
-            <TabsContent value="employee">
-                <FormField v-slot="{ componentField }" name="employee_hiring_date">
-                    <FormItem>
-                    <FormLabel>Employee Hiring Date</FormLabel>
-                    <FormControl>
-                        <Input type="date" v-bind="componentField" />
-                    </FormControl>
-                    </FormItem>
-                </FormField>
-
-                <FormField v-slot="{ value, componentField }" name="compensation_type">
-                    <FormItem>
-                        <FormLabel>Compensation Type</FormLabel>
-                        <FormControl>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger as-child>
-                            <Button
-                                variant="outline"
-                                :class="{
-                                'w-full justify-start font-normal': true,
-                                'text-muted-foreground': !value, // grey when no value
-                                }"
-                            >
-                                {{ value || 'Select compensation type' }}
-                            </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                            <DropdownMenuItem @click="setFieldValue('compensation_type', 'Salaried')">
-                                Salaried
-                            </DropdownMenuItem>
-                            <DropdownMenuItem @click="setFieldValue('compensation_type', 'Hourly')">
-                                Hourly
-                            </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                </FormField>
-            </TabsContent>
-
-            <TabsContent value="contractor">
-                <FormField v-slot="{ componentField }" name="contract_start_date">
-                    <FormItem>
-                    <FormLabel>Contractor Start Date</FormLabel>
-                    <FormControl>
-                        <Input type="date" v-bind="componentField" />
-                    </FormControl>
-                    </FormItem>
-                </FormField>
-
-                <FormField v-slot="{ componentField }" name="contract_end_date">
-                    <FormItem>
-                    <FormLabel>Contractor End Date</FormLabel>
-                    <FormControl>
-                        <Input type="date" v-bind="componentField" />
-                    </FormControl>
-                    </FormItem>
-                </FormField>
-</TabsContent>
-        </Tabs>
-
-
         <form @submit.prevent= "onSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField v-slot="{ componentField }" name="firstname">
                 <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <RequiredLabel required>First Name</RequiredLabel>
                     <FormControl>
                         <Input type="text" placeholder="Enter First Name" v-bind="componentField" />
                     </FormControl>
@@ -305,50 +216,19 @@ const onSubmit = handleSubmit(async (values) => {
 
             <FormField v-slot="{ componentField }" name="lastname">
                 <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <RequiredLabel required>Last Name</RequiredLabel>
                     <FormControl>
                         <Input type="text" placeholder="Enter Last Name" v-bind="componentField" />
                     </FormControl>
                 </FormItem>
             </FormField>
 
-            <FormField name="dob">
-                <FormItem class="flex flex-col">
-                    <FormLabel>Date of birth</FormLabel>
-                    <Popover>
-                    <PopoverTrigger as-child>
-                        <FormControl>
-                        <Button
-                            variant="outline" :class="{
-                            'w-[240px] ps-3 text-start font-normal': true,
-                            'text-muted-foreground': !value
-                            }"
-                        >
-                            <span>{{ value ? df.format(toDate(value)) : "Pick a date" }}</span>
-                            <CalendarIcon class="ms-auto h-4 w-4 opacity-50" />
-                        </Button>
-                        <input hidden>
-                        </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-auto p-0">
-                        <Calendar
-                        v-model:placeholder="placeholder"
-                        :model-value="value"
-                        calendar-label="Date of birth"
-                        initial-focus
-                        :min-value="new CalendarDate(1900, 1, 1)"
-                        :max-value="today(getLocalTimeZone())"
-                        @update:model-value="(v) => {
-                            if (v) {
-                            setFieldValue('dob', v.toString())
-                            }
-                            else {
-                            setFieldValue('dob', undefined)
-                            }
-                        }"
-                        />
-                    </PopoverContent>
-                    </Popover>
+            <FormField v-slot="{ componentField }" name="dob">
+                <FormItem>
+                <FormLabel>Date Of Birth</FormLabel>
+                <FormControl>
+                    <Input type="date" v-bind="componentField" />
+                </FormControl>
                 </FormItem>
             </FormField>
 
@@ -382,7 +262,7 @@ const onSubmit = handleSubmit(async (values) => {
             
             <FormField v-slot="{ componentField }" name="mobile">
                 <FormItem>
-                    <FormLabel>Mobile Number</FormLabel>
+                    <RequiredLabel required>Mobile Number</RequiredLabel>
                     <FormControl>
                     <Input
                         type="tel"
@@ -400,7 +280,7 @@ const onSubmit = handleSubmit(async (values) => {
                 <!-- Email -->
             <FormField v-slot="{ componentField }" name="email">
                 <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <RequiredLabel required>Email Address</RequiredLabel>
                     <FormControl>
                     <Input
                         type="email"
@@ -427,6 +307,37 @@ const onSubmit = handleSubmit(async (values) => {
                     <FormMessage />
                 </FormItem>
             </FormField>
+
+            <FormField v-slot="{ value, componentField }" name="compensation_type">
+                <FormItem>
+                    <FormLabel>Compensation Type</FormLabel>
+                    <FormControl>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                        <Button
+                            variant="outline"
+                            :class="{
+                            'w-full justify-start font-normal': true,
+                            'text-muted-foreground': !value, // grey when no value
+                            }"
+                        >
+                            {{ value || 'Select compensation type' }}
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                        <DropdownMenuItem @click="setFieldValue('compensation_type', 'Salaried')">
+                            Salaried
+                        </DropdownMenuItem>
+                        <DropdownMenuItem @click="setFieldValue('compensation_type', 'Hourly')">
+                            Hourly
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            </FormField>
+
 
             <FormField v-slot="{ value, componentField }" name="marital_status">
                 <FormItem>
@@ -459,20 +370,23 @@ const onSubmit = handleSubmit(async (values) => {
             </FormField>
 
 
-            <FormField name="dependants_count" v-slot="{ value, handleChange }">
-            <FormItem>
+            <FormField name="dependants_count" v-slot="{ value, setValue }">
+                <FormItem>
                 <FormLabel>Dependants Count</FormLabel>
-                <FormControl>
-                <NumberField :value="value" @update:value="handleChange">
+                <NumberField
+                    :model-value="value ?? 0"
+                    @update:model-value="v => setValue(Math.min(Math.max(v, 0), 10))"
+                >
                     <NumberFieldContent>
                     <NumberFieldDecrement />
-                    <NumberFieldInput />
+                    <FormControl>
+                        <NumberFieldInput :min="0" :max="10" />
+                    </FormControl>
                     <NumberFieldIncrement />
                     </NumberFieldContent>
                 </NumberField>
-                </FormControl>
                 <FormMessage />
-            </FormItem>
+                </FormItem>
             </FormField>
 
             <FormField v-slot="{ componentField }" name="address_full">
@@ -525,6 +439,15 @@ const onSubmit = handleSubmit(async (values) => {
                     <FormControl>
                         <Input type="text" placeholder="Enter zip code" v-bind="componentField" />
                     </FormControl>
+                </FormItem>
+            </FormField>
+
+            <FormField v-slot="{ componentField }" name="employee_hiring_date">
+                <FormItem>
+                <FormLabel>Employee Hiring Date</FormLabel>
+                <FormControl>
+                    <Input type="date" v-bind="componentField" />
+                </FormControl>
                 </FormItem>
             </FormField>
 
