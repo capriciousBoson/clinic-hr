@@ -20,22 +20,6 @@ zip_validator = RegexValidator(
 
 
 class  BasePartySerializer(serializers.ModelSerializer):
-
-    # Custom validation methods
-    def validate_dob(self, value):
-        """Validate date of birth"""
-        today = date.today()
-        min_age_date = today - timedelta(days=365 * 120)  # 120 years max
-        max_age_date = today - timedelta(days=365 * 18)   # 18 years min
-        
-        if value > today:
-            raise serializers.ValidationError("Date of birth cannot be in the future.")
-        if value < min_age_date:
-            raise serializers.ValidationError("Invalid date of birth.")
-        if value > max_age_date:
-            raise serializers.ValidationError("Must be at least 18 years old.")
-        
-        return value
     
     def validate_email(self, value):
         """Custom email validation"""
@@ -51,31 +35,19 @@ class  BasePartySerializer(serializers.ModelSerializer):
         
         return value.lower()  # Normalize to lowercase
     
-    def validate_dependants(self, value):
-        """Validate dependants count"""
-        if value < 0:
-            raise serializers.ValidationError("Dependants cannot be negative.")
-        if value > 20:  # Reasonable upper limit
-            raise serializers.ValidationError("Dependants count seems unusually high.")
-        return value
-    def validate_ssn(self, value):
-        """Validate SSN format and uniqueness"""
-        # Remove any formatting
-        ssn_digits = re.sub(r'\D', '', value)
+
+    def validate_phone_number(self, value):
+        if self.instance:
+            # For updates, exclude current instance
+            if Party.objects.filter(phone_number=value).exclude(pk=self.instance.pk).exists():
+                raise serializers.ValidationError("Phone number already exists.")
+        else:
+            # For creation
+            if Party.objects.filter(phone_number=value).exists():
+                raise serializers.ValidationError("Phone number address already exists.")
         
-        if len(ssn_digits) != 9:
-            raise serializers.ValidationError("SSN must be exactly 9 digits.")
-        
-        # Check for obviously invalid SSNs
-        invalid_ssns = ['000000000', '123456789', '111111111', '222222222']
-        if ssn_digits in invalid_ssns:
-            raise serializers.ValidationError("Invalid SSN format.")
-        
-        # Check uniqueness
-        if Party.objects.filter(ssn=ssn_digits).exists():
-            raise serializers.ValidationError("SSN already exists.")
-        
-        return ssn_digits
+        return value.lower()
+
 
 
 
@@ -85,65 +57,14 @@ class PartyCreateSerializer(BasePartySerializer):
     class Meta:
         model = Party
         fields = [
-            'first_name', 'last_name', 'dob', 'gender', 'ssn',
-            'address_full', 'address_city', 'address_zip', 'address_state',
-            'marital_status', 'phone_number', 'email', 'dependants'
+            "email", "phone_number", "address_full", "address_city",
+            "address_zip", "address_state", "active"
         ]
         extra_kwargs = {
-            'first_name': {
-                'required': True,
-                'allow_blank': False,
-                # 'min_length': 2,
-                # 'max_length': 100
-            },
-            'last_name': {
-                'required': True,
-                'allow_blank': False,
-                # 'min_length': 2,
-                # 'max_length': 100
-            },
-            'dob' : {
-                'required': True,
-            },
-            'gender' : {
-                # 'min_length': 4,
-                # 'max_length': 6,
-                'required': True,
-                'allow_blank': False,
-            },
-            'marital_status' : {
-                # 'min_length': 6,
-                # 'max_length': 8,
-                'required': True,
-                'allow_blank': False,
-            },
-            'ssn': {
-                'write_only': True,
-                'required': True,
-                'style': {'input_type': 'password'}  # Hide in browsable API,
-            },
-            'address_full': {
-                'required': True,
-                'allow_blank': False,
-                # 'min_length': 10
-            },
-            'address_city': {
-                'required': True,
-                'allow_blank': False,
-                # 'min_length': 2
-            },
-            'address_zip': {
-                'required': True,
-                'validators': [zip_validator]
-            },
-            'phone_number': {
-                'required': True,
-                'validators': [phone_validator]
-            },
-            'email': {
-                'required': True,
-                'allow_blank': False
-            }
+            "phone_number": {"validators": [phone_validator]},
+            "address_zip": {"validators": [zip_validator], "required": False},
+            "created_at": {"read_only": True},
+            "updated_at": {"read_only": True}
         }
     
 class PartyUpdateSerializer(BasePartySerializer):
@@ -152,18 +73,12 @@ class PartyUpdateSerializer(BasePartySerializer):
     class Meta:
         model = Party
         fields = [
-            'first_name', 'last_name', 'dob', 'gender',
-            'address_full', 'address_city', 'address_zip', 'address_state',
-            'marital_status', 'phone_number', 'email', 'dependants', 'active'
+            "email", "phone_number", "address_full", "address_city",
+            "address_zip", "address_state", "active"
         ]
         extra_kwargs = {
-            # 'first_name': {'min_length': 2},
-            # 'last_name': {'min_length': 2},
-            # 'address_full': {'min_length': 10},
-            # 'address_city': {'min_length': 2},
-            # 'address_state': {'min_length':2},
-            'address_zip': {'validators': [zip_validator]},
-            'phone_number': {'validators': [phone_validator]},
+            "phone_number": {"validators": [phone_validator]},
+            "address_zip": {"validators": [zip_validator], "required": False},
         }
     def validate_email(self, value):
         """Custom validation for email uniqueness"""
@@ -195,53 +110,34 @@ class PartyUpdateSerializer(BasePartySerializer):
 
 class PartyListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for listing parties"""
-    ssn_masked = serializers.SerializerMethodField()
-
-
     class Meta:
         model = Party
         fields = [
-            'id','first_name', 'last_name', 'dob', 'gender', 'ssn_masked',
-            'address_full', 'address_city', 'address_zip', 'address_state',
-            'marital_status', 'phone_number', 'email', 'dependants', 'active'
+            "id", "email", "phone_number", "address_full",
+            "address_city", "address_zip", "address_state", "active"
         ]
-
-    def get_ssn_masked(self, obj):
-        """Return masked SSN for display"""
-        if obj.ssn:
-            return f"***-**-{obj.ssn[-4:]}"
-        return None
     
 # ===================== EMPLOYEE PROFILE SERIALIZERS ===================== #
 
 class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
     """Create Employee with nested Party"""
     
-    party = PartyCreateSerializer()
+    party = PartyCreateSerializer(write_only=True, required=True)
     class Meta:
         model = EmployeeProfile
         fields = [
-            'party', 'employer', 'compensation_type',
-            'date_hired', 'date_offboarded'
+            "party",
+            "employer", "first_name", "last_name", "dob", "gender",
+            "ssn", "marital_status", "dependants", "compensation_type",
+            "date_hired", "date_offboarded"
         ]
         extra_kwargs = {
-            'employer':{'read_only':True},
-            'date_hired': {'required': True},
-            'compensation_type':{'required':True},
+            "employer": {"read_only": True},
+            "ssn": {"style": {"input_type": "password"}},
+            "date_hired": {"required": False},
         }
     
-    # def validate_date_hired(self, value):
-    #     """Validate hire date"""
-    #     if value > date.today():
-    #         raise serializers.ValidationError("Hire date cannot be in the future.")
-    #     return value
-    
-    # def validate_date_offboarded(self, value):
-    #     """Validate offboard date if provided"""
-    #     if value and value > date.today():
-    #         raise serializers.ValidationError("Offboard date cannot be in the future.")
-    #     return value
-    
+
     def validate(self, attrs):
         """Cross-field validation"""
         date_hired = attrs.get('date_hired')
@@ -261,37 +157,27 @@ class EmployeeProfileCreateSerializer(serializers.ModelSerializer):
         
         
         employer = self.context['request'].user
-        # print(f"found employer in serializer ---- : {employer}")
+        print(f"found employer in serializer ---- : {employer}")
         
-        # Create Party first
-        party = Party.objects.create(**party_data)
-        
-        # Create Employee
-        employee = EmployeeProfile.objects.create(party=party,employer=employer, **validated_data)
-        
+        employee = EmployeeProfile.objects.create(
+                                                employer=employer,
+                                                **party_data,
+                                                **validated_data
+                                            )
         return employee
     
 class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
     """Update Employee with nested Party updates"""
     
-    party = PartyUpdateSerializer()
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['party'] = PartyUpdateSerializer(
-            instance=getattr(self.instance, 'party', None),
-            required=False,
-            context=self.context,
-        )
-    
+    party = PartyUpdateSerializer(source='*', read_only=True)
     class Meta:
         model = EmployeeProfile
-        fields = ['party', 'compensation_type', 'date_hired', 'date_offboarded']
+        fields = [
+            "party", "first_name", "last_name", "dob", "gender",
+            "ssn", "marital_status", "dependants", "compensation_type",
+            "date_hired", "date_offboarded"
+        ]
     
-    # def validate_date_offboarded(self, value):
-    #     """Validate offboard date"""
-    #     if value and value > date.today():
-    #         raise serializers.ValidationError("Offboard date cannot be in the future.")
-    #     return value
     
     def validate(self, attrs):
         """Cross-field validation"""
@@ -313,7 +199,7 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
         # Update Party if data provided
         if party_data:
             party_serializer = PartyUpdateSerializer(
-                instance=instance.party, 
+                instance=instance, 
                 data=party_data, 
                 partial=True
             )
@@ -332,13 +218,14 @@ class EmployeeProfileUpdateSerializer(serializers.ModelSerializer):
 class EmployeeProfileListSerializer(serializers.ModelSerializer):
     """Retrieve Employee with nested Party details"""
     
-    party = PartyListSerializer(read_only=True)
+    party = PartyListSerializer(source='*', read_only=True)
     
     class Meta:
         model = EmployeeProfile
         fields = [
-            'id', 'party','compensation_type', 'employer', 'date_hired',
-            'date_offboarded'
+            "id","party", "first_name", "last_name", "dob", "gender",
+            "ssn", "marital_status", "dependants", "compensation_type",
+            "date_hired", "date_offboarded"
         ]
     
 
@@ -347,38 +234,16 @@ class EmployeeProfileListSerializer(serializers.ModelSerializer):
 class ContractorProfileCreateSerializer(serializers.ModelSerializer):
     """Create Contractor with nested Party"""
     
-    party = PartyCreateSerializer()
-    
+    party = PartyCreateSerializer(write_only=True, required=True)
     
     class Meta:
         model = ContractorProfile
-        fields = [
-            'party', 'employer', 'contract_start_date',
-            'contract_end_date', 
-        ]
+        fields = ["id", "party", "employer", "contractor_name", "tin"]
+
         extra_kwargs = {
-            'employer': {'read_only': True},
-            'contract_start_date': {'required': True},
-            'contract_end_date':{'required':False},
+            "employer": {"read_only": True},
+            "tin": {"style": {"input_type": "password"}}
         }
-    
-
-    
-    def validate(self, attrs):
-        """Cross-field validation"""
-        start_date = attrs.get('contract_start_date')
-        end_date = attrs.get('contract_end_date')
-
-        if not end_date:
-            return attrs
-        
-        if start_date and end_date:
-            if end_date <= start_date:
-                raise serializers.ValidationError({
-                    'contract_end_date': 'Contract end date must be after start date.'
-                })
-        
-        return attrs
 
     
     @transaction.atomic
@@ -386,13 +251,14 @@ class ContractorProfileCreateSerializer(serializers.ModelSerializer):
         """Create Contractor with nested Party"""
         party_data = validated_data.pop('party')
         
-        # Create Party first
-        party = Party.objects.create(**party_data)
 
         employer = self.context['request'].user
         
         # Create Contractor
-        contractor = ContractorProfile.objects.create(party=party, employer=employer,**validated_data)
+        contractor = ContractorProfile.objects.create(
+                                    employer=employer,
+                                    **party_data,
+                                    **validated_data)
         
         return contractor
 
@@ -400,75 +266,39 @@ class ContractorProfileCreateSerializer(serializers.ModelSerializer):
 class ContractorProfileListSerializer(serializers.ModelSerializer):
     """Retrieve Contractor with nested Party details"""
     
-    party = PartyListSerializer(read_only=True)
+    party = PartyListSerializer(source='*', read_only=True)
     
     class Meta:
         model = ContractorProfile
-        fields = [
-            'id', 'party', 'employer', 'contract_start_date',
-            'contract_end_date',
-        ]
+        fields = ["id", "party", "employer", "contractor_name", "tin"]
     
 
 class ContractorProfileUpdateSerializer(serializers.ModelSerializer):
     """Update Contractor with nested Party updates"""
     
-    party = PartyUpdateSerializer()
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['party'] = PartyUpdateSerializer(
-            instance=getattr(self.instance, 'party', None),
-            required=False,
-            context=self.context,
-        )
-    
+    party = PartyUpdateSerializer(source='*', read_only=True)
     class Meta:
         model = ContractorProfile
-        fields = ['party', 'contract_start_date', 'contract_end_date']
+        fields = ["party", "contractor_name", "tin"]
     
-    # def get_fields(self):
-    #     fields = super().get_fields()
-    #     fields['party'] = PartyUpdateSerializer(
-    #         instance=getattr(self.instance, 'party', None),
-    #         required=False,
-    #         context=self.context,
-    #     )
-    #     return fields
-    
-    def validate(self, attrs):
-        """Cross-field validation"""
-        start_date = attrs.get('contract_start_date', self.instance.contract_start_date)
-        end_date = attrs.get('contract_end_date', self.instance.contract_end_date)
 
-        if not end_date:
-            return attrs
-        
-        if start_date and end_date:
-            if end_date <= start_date:
-                raise serializers.ValidationError({
-                    'contract_end_date': 'Contract end date must be after start date.'
-                })
-        
-        return attrs
     
     @transaction.atomic
     def update(self, instance, validated_data):
         """Update Contractor and nested Party"""
         party_data = validated_data.pop('party', None)
-        print(f"this is the party data in contractor update serializer - {party_data}------------")
+        # print(f"this is the party data in contractor update serializer - {party_data}------------")
         
         # Update Party if data provided
         if party_data:
             party_serializer = PartyUpdateSerializer(
-                instance=instance.party, 
+                instance=instance, 
                 data=party_data, 
                 partial=True
             )
             if party_serializer.is_valid(raise_exception=True):
                 party_serializer.save()
-        else:
-            print(f"bug in party update serializer-----------------")
-        
+
         # Update Contractor
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -476,13 +306,13 @@ class ContractorProfileUpdateSerializer(serializers.ModelSerializer):
         
         return instance
     
-class DocumentCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Document
-        fields = [
-            'party', 'document_type', 'document_name',
-            'contract_end_date', 
-        ]
+# class DocumentCreateSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Document
+#         fields = [
+#             'party', 'document_type', 'document_name',
+#             'contract_end_date', 
+#         ]
 
 
 # ===================== DOCUMENT SERIALIZERS ===================== #

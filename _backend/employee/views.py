@@ -23,7 +23,7 @@ class EmployeeProfileListCreateView(APIView):
     
     def post(self, request):
 
-        # print(f"request.data - {request.data}")
+        print(f"request.data ------- {request.user}")
         serializer = EmployeeProfileCreateSerializer(data=request.data, context={'request': request})
         # print(f"found user - {request.user}")
 
