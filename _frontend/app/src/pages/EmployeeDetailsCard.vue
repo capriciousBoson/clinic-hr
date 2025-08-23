@@ -86,13 +86,13 @@ const details = computed<[string, any][]>(() => {
     const e = emp.value;
     return [
         ["ID", e.id],
-        ["First name", e.party?.first_name],
-        ["Last name", e.party?.last_name],
+        ["First name", e.first_name],
+        ["Last name", e.last_name],
         ["Email", e.party?.email],
         ["Mobile", e.party?.phone_number],
-        ["DOB", fmtDate(e.party?.dob)],
+        ["DOB", fmtDate(e.dob)],
         ["Date started", fmtDate(e.date_hired)],
-        ["Gender", titleCase(e.party?.gender)],
+        ["Gender", titleCase(e.gender)],
         ["Payment type", titleCase(e.compensation_type)],
         ["Address", e.party?.address_full],
         ["City", e.party?.address_city],
