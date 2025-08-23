@@ -48,24 +48,23 @@ const formSchema = toTypedSchema(
         lastname: z.string().min(1, "Last name is required"),
         email: z.string().email("Invalid email address"),
         mobile: z.string().regex(/^(\+1)?[2-9]\d{2}[2-9](?!11)\d{6}$/, "Invalid US mobile number"),
-        city: z.string().min(1, "City is required"),
-        dob: z.string().min(0, "DOB is required"),
-        address_full: z.string().min(1, "Address is required"),
-        address_zip: z.string().min(1, "Zip code is required"),
+        employee_hiring_date: z.string().min(1, "Hire date is required"),
         state: z.string().min(1, "State is required"),
-        marital_status: z.enum(["Single", "Married", "Divorced"], {
-        errorMap: () => ({ message: "Select a valid marital status." })
-        }),
-        gender: z.enum(["Male", "Female", "Other"], {
-        errorMap: () => ({ message: "Select valid Gender." })
-        }),
-        ssn: z.string().regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be XXX-XX-XXXX"),
-        // Use z.coerce.number so inputs from text/number fields validate correctly
+
+        ssn: z
+            .string()
+            .optional()
+            .refine((v) => !v || /^\d{3}-\d{2}-\d{4}$/.test(v), {
+            message: "SSN must be XXX-XX-XXXX",
+            }),
+        city: z.string().optional(),
+        dob: z.string().optional(),
+        address_full: z.string().optional(),
+        address_zip: z.string().optional(),
+        marital_status: z.enum(["Single", "Married", "Divorced"]).optional(),
+        gender: z.enum(["Male", "Female", "Other"]).optional(),
         dependants_count: z.coerce.number().int().min(0).max(10).default(0),
-        compensation_type: z.enum(["Salaried", "Hourly"], {
-        required_error: "Compensation type is required"
-        }),
-        employee_hiring_date: z.string().min(1, "Hire date is required")
+        compensation_type: z.enum(["Salaried", "Hourly"]).optional(),
     })
 )
 
@@ -149,43 +148,62 @@ const onSubmit = handleSubmit(async (values) => {
     try {
         console.log("onSubmit fired", values);
 
-        const party = {
-        first_name: s(values.firstname),
-        last_name: s(values.lastname),
-        dob: s(values.dob), // yyyy-mm-dd from your date picker
-        gender: lower(values.gender),
-        ssn: s(values.ssn).replace(/-/g, ""),
-        address_full: s(values.address_full),
-        address_city: s(values.city),
-        address_zip: s(values.address_zip),
-        address_state: s(values.state),
-        marital_status: lower(values.marital_status),
-        phone_number: s(values.mobile),
-        email: s(values.email),
-        dependants: Number(values.dependants_count ?? 0)
+        const addIf = (obj: Record<string, any>, key: string, val: any) => {
+            if (val === undefined || val === null) return;
+            const str = typeof val === "string" ? val.trim() : val;
+            if (str === "" || (Number.isNaN(str) && typeof str === "number")) return;
+            obj[key] = str;
         };
 
-        const payload = {
-                party,
-                compensation_type: lower(values.compensation_type),
-                date_hired: s(values.employee_hiring_date) || null,
-                date_offboarded: null,
-            };
+        // --- REQUIRED party fields ---
+        const party: Record<string, any> = {
+            email: s(values.email),
+            phone_number: s(values.mobile),
+            address_state: s(values.state),
+        };
 
-        console.log("Submitting payload:", payload);
+    // --- OPTIONAL party fields (validate only if provided) ---
+    addIf(party, "address_full", s(values.address_full));
+    addIf(party, "address_city", s(values.city));
+    addIf(party, "address_zip", s(values.address_zip));
+
+        // --- REQUIRED top-level fields ---
+        const payload: Record<string, any> = {
+            party,
+            first_name: s(values.firstname),
+            last_name: s(values.lastname),
+            date_hired: s(values.employee_hiring_date),
+        };
+
+    // --- OPTIONAL top-level fields (only if provided) ---
+    addIf(payload, "dob", s(values.dob)); // expect YYYY-MM-DD
+    if (values.gender) payload.gender = lower(values.gender);
+    if (values.ssn) payload.ssn = s(values.ssn).replace(/-/g, "");
+    if (values.compensation_type) payload.compensation_type = lower(values.compensation_type);
+    if (values.marital_status) payload.marital_status = lower(values.marital_status);
+    if (
+        values.dependants_count !== undefined &&
+        values.dependants_count !== null &&
+        `${values.dependants_count}`.trim() !== ""
+    ) {
+        payload.dependants = Number(values.dependants_count);
+    }
+    if (values.date_offboarded) payload.date_offboarded = s(values.date_offboarded);
+
+    console.log("Submitting payload:", payload);
 
 
         const apiBaseUrl = "http://127.0.0.1:8000/api"; // from .env
         const endpoint = `${apiBaseUrl}/emp/employeeapi/`
         console.log("Endpoint---------------------",endpoint)
         const res = await axios.post(endpoint, payload, {
-         auth: {
-            username: 'prabh',  
-            password: 'wasd1234'  
-        },
-        headers: {
-            "Content-Type": "application/json",
-        },
+            auth: {
+                username: 'prabh',  
+                password: 'wasd1234'  
+            },
+            headers: {
+                "Content-Type": "application/json",
+            },
         });
 
     console.log("API Response:", res.data);
@@ -410,7 +428,7 @@ const onSubmit = handleSubmit(async (values) => {
 
             <FormField name="state" v-slot="{ value, handleChange }">
                 <FormItem>
-                    <FormLabel>State</FormLabel>
+                    <RequiredLabel required>State</RequiredLabel>
                     <FormControl>
                     <DropdownMenu>
                         <DropdownMenuTrigger class="w-full border px-4 py-2 rounded-md text-left text-muted-foreground">
@@ -444,7 +462,7 @@ const onSubmit = handleSubmit(async (values) => {
 
             <FormField v-slot="{ componentField }" name="employee_hiring_date">
                 <FormItem>
-                <FormLabel>Employee Hiring Date</FormLabel>
+                <RequiredLabel required>Employee Hiring Date</RequiredLabel>
                 <FormControl>
                     <Input type="date" v-bind="componentField" />
                 </FormControl>
