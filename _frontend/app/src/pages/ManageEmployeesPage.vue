@@ -92,12 +92,12 @@ function onEdit(row: any) {
 
             <TableBody>
             <TableRow v-for="e in employees" :key="e.id">
-                <TableCell>{{ e.party?.first_name || "—" }}</TableCell>
-                <TableCell>{{ e.party?.last_name || "—" }}</TableCell>
+                <TableCell>{{ e.first_name || "—" }}</TableCell>
+                <TableCell>{{ e.last_name || "—" }}</TableCell>
                 <TableCell>{{ e.party?.phone_number || "—" }}</TableCell>
                 <TableCell>{{ e.party?.email || "—" }}</TableCell>
                 <TableCell class="whitespace-nowrap">{{ e.date_hired }}</TableCell>
-                <TableCell>{{ fmtString(e.party?.gender) }}</TableCell>
+                <TableCell>{{ fmtString(e.gender) }}</TableCell>
                 <TableCell>{{ fmtString(e.compensation_type) || "—" }}</TableCell>
                 <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-2">
