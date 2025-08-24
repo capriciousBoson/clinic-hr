@@ -261,33 +261,7 @@ const addIf = (obj: Record<string, any>, key: string, val: any) => {
 
 const lower = (v?: string) => (v ? v.toLowerCase() : v);
 
-function buildPayload(v: FormValues) {
-  const party: Record<string, any> = {};
-  addIf(party, "email", v.email);
-  addIf(party, "phone_number", v.mobile);
-  addIf(party, "address_city", v.address_city);
-  addIf(party, "address_state", v.address_state);
-  addIf(party, "address_full", v.address_full);
-  addIf(party, "address_zip", v.address_zip);
 
-  const payload: Record<string, any> = {};
-  if (Object.keys(party).length) payload.party = party;
-
-  addIf(payload, "first_name", v.firstname);
-  addIf(payload, "last_name", v.lastname);
-  addIf(payload, "dob", v.dob);
-  if (v.gender) payload.gender = lower(v.gender);
-  if (v.marital_status) payload.marital_status = lower(v.marital_status);
-  if (v.compensation_type) payload.compensation_type = lower(v.compensation_type);
-  if (v.ssn) payload.ssn = v.ssn.replace(/-/g, "");
-  addIf(payload, "date_hired", v.date_hired);
-
-  if (v.dependants_count !== "" && v.dependants_count !== null && v.dependants_count !== undefined) {
-    payload.dependants = Number(v.dependants_count);
-  }
-
-  return payload;
-}
 
 
 const onSave = handleSubmit(async (vals) => {
