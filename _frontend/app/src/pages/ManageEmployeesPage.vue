@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, Pencil, UserMinus } from "lucide-vue-next";
 import EmployeeDetailsCard from "@/pages/EmployeeDetailsCard.vue";
 import EmployeeEditCard from "@/pages/EmployeeEditCard.vue";
+import EmployeeOffboardCard from "@/pages/EmployeeOffboardCard.vue";
 
 
 type Party = {
@@ -68,6 +69,15 @@ function onEdit(row: any) {
     showEdit.value = true;
 }
 
+const showOffboard = ref(false);
+
+function onOffboard(row: any) {
+    if (!row?.id) return;
+    selectedId.value = Number(row.id);
+    selectedRow.value = row;        // optional seed
+    showOffboard.value = true;
+}
+
 </script>
 
 <template>
@@ -107,7 +117,7 @@ function onEdit(row: any) {
                     <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onEdit(e)">
                     <Pencil class="w-4 h-4" /><span class="hidden sm:inline">Edit Details</span>
                     </Button>
-                    <Button variant="destructive" size="sm" class="inline-flex items-center gap-1" @click="onOffboard(e.id)">
+                    <Button variant="destructive" size="sm" class="inline-flex items-center gap-1" @click="onOffboard(e)">
                     <UserMinus class="w-4 h-4" /><span class="hidden sm:inline">Offboard</span>
                     </Button>
                 </div>
@@ -126,6 +136,12 @@ function onEdit(row: any) {
 
     <EmployeeEditCard
         v-model:open="showEdit"
+        :employee-id="selectedId"
+        :initial="selectedRow"
+    />
+
+    <EmployeeOffboardCard
+        v-model:open="showOffboard"
         :employee-id="selectedId"
         :initial="selectedRow"
     />

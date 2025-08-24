@@ -53,7 +53,8 @@ export async function updateEmployee(
       `${formValues.dependants_count}`.trim() !== ""
         ? Number(formValues.dependants_count)
         : current.dependants,
-    date_offboarded: current.date_offboarded ?? null, // keep existing unless you change it
+    
+        date_offboarded: formValues.date_offboarded ?? current.date_offboarded,
 
     // nested party
     party: {
