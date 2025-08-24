@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import { getEmployee, updateEmployee } from "@/typescript/getEmployees";
+import RequiredLabel from '@/components/ui/required-label.vue'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input'
