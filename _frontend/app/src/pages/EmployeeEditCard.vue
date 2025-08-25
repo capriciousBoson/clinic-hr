@@ -251,19 +251,6 @@ function onClose() {
 
 
 
-const trimOrUndef = (v: unknown) =>
-  typeof v === "string" ? v.trim() || undefined : v;
-
-const addIf = (obj: Record<string, any>, key: string, val: any) => {
-  const t = trimOrUndef(val);
-  if (t !== undefined && t !== null) obj[key] = t;
-};
-
-const lower = (v?: string) => (v ? v.toLowerCase() : v);
-
-
-
-
 const onSave = handleSubmit(async (vals) => {
   if (!props.employeeId && !emp.value?.id) {
     error.value = "Missing employee id for update";
