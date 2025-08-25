@@ -45,7 +45,7 @@ const data = {
             },
             {
                 title: "Manage Employees",
-                routeName: "/employee/manage",
+                routeName: "/employee/manage-employees",
                 icon: UserCog,
             },
         
@@ -63,7 +63,7 @@ const data = {
             },
             {
                 title: "Manage contractor",
-                routeName: "/contractor/manage",
+                routeName: "/contractor/manage-contractors",
                 icon: ListChecks,
             },
         

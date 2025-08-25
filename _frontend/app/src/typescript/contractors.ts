@@ -39,3 +39,9 @@ export async function createContractor(formValues: any) {
     })
     return data
 }
+
+export async function getContractors(params: Record<string, any> = {}) {
+  const res = await api.get("/emp/contractorapi/", { params }); // DRF expects trailing slash
+  // If DRF pagination is on -> { count, results, next, previous }
+  return res.data;
+}
