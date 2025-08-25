@@ -9,6 +9,15 @@ const api = axios.create({
   },
 });
 
+const s = (v: any) => (typeof v === "string" ? v.trim() : v);
+const lower = (v?: string) => (v ? v.toLowerCase().trim() : v);
+const addIf = (obj: Record<string, any>, key: string, val: any) => {
+  if (val === undefined || val === null) return;
+  const str = typeof val === "string" ? val.trim() : val;
+  if (str === "" || (typeof str === "number" && Number.isNaN(str))) return;
+  obj[key] = str;
+};
+
 // GET employees (no body, only query params)
 export async function getEmployees(params: Record<string, any> = {}) {
   const res = await api.get("/emp/employeeapi/", { params }); // DRF expects trailing slash
@@ -69,6 +78,53 @@ export async function updateEmployee(
   };
 
   const { data } = await api.put(`/emp/employeeapi/${id}/`, payload); // note the trailing slash
+  return data;
+}
+
+
+
+export async function createEmployee(formValues: any) {
+  // REQUIRED party fields
+  const party: Record<string, any> = {
+    email: s(formValues.email),
+    phone_number: s(formValues.mobile),
+    address_state: s(formValues.state),
+  };
+  // OPTIONAL party fields
+  addIf(party, "address_full", s(formValues.address_full));
+  addIf(party, "address_city", s(formValues.city));
+  addIf(party, "address_zip", s(formValues.address_zip));
+
+  // REQUIRED top-level
+  const payload: Record<string, any> = {
+    party,
+    first_name: s(formValues.firstname),
+    last_name: s(formValues.lastname),
+    date_hired: s(formValues.employee_hiring_date), // expects YYYY-MM-DD
+  };
+
+  // OPTIONAL top-level (only include if provided)
+  addIf(payload, "dob", s(formValues.dob)); // YYYY-MM-DD (omit if "")
+  if (formValues.gender) payload.gender = lower(formValues.gender);
+  if (formValues.ssn) payload.ssn = s(formValues.ssn).replace(/-/g, "");
+  if (formValues.compensation_type) payload.compensation_type = lower(formValues.compensation_type);
+  if (formValues.marital_status) payload.marital_status = lower(formValues.marital_status);
+
+  if (
+    formValues.dependants_count !== undefined &&
+    formValues.dependants_count !== null &&
+    `${formValues.dependants_count}`.trim() !== ""
+  ) {
+    payload.dependants = Number(formValues.dependants_count);
+  }
+
+  // Offboarding date (optional) — omit if empty string
+  addIf(payload, "date_offboarded", s(formValues.date_offboarded));
+
+  // POST
+  const { data } = await api.post("/emp/employeeapi/", payload, {
+    headers: { "Content-Type": "application/json" },
+  });
   return data;
 }
 

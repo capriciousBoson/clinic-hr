@@ -3,7 +3,7 @@ import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 
-import axios from "axios";  
+import {createEmployee} from "@/typescript/employees"; 
 import {  CalendarDate, DateFormatter, getLocalTimeZone, parseDate, today } from "@internationalized/date"
 import { Button } from '@/components/ui/button'
 import { CalendarIcon } from "lucide-vue-next"
@@ -144,76 +144,23 @@ const usStates = [
 const s = (v: unknown) => (v == null ? "" : String(v)).trim();
 const lower = (v: unknown) => s(v).toLowerCase();
 
+const loading = ref(false);
+const error = ref<string | null>(null);
+
 const onSubmit = handleSubmit(async (values) => {
-    try {
-        console.log("onSubmit fired", values);
+  try {
+    loading.value = true; error.value = null;
+    const created = await createEmployee(values);   // ← one-liner
+    console.log("API Response:", created);
 
-        const addIf = (obj: Record<string, any>, key: string, val: any) => {
-            if (val === undefined || val === null) return;
-            const str = typeof val === "string" ? val.trim() : val;
-            if (str === "" || (Number.isNaN(str) && typeof str === "number")) return;
-            obj[key] = str;
-        };
-
-        // --- REQUIRED party fields ---
-        const party: Record<string, any> = {
-            email: s(values.email),
-            phone_number: s(values.mobile),
-            address_state: s(values.state),
-        };
-
-    // --- OPTIONAL party fields (validate only if provided) ---
-    addIf(party, "address_full", s(values.address_full));
-    addIf(party, "address_city", s(values.city));
-    addIf(party, "address_zip", s(values.address_zip));
-
-        // --- REQUIRED top-level fields ---
-        const payload: Record<string, any> = {
-            party,
-            first_name: s(values.firstname),
-            last_name: s(values.lastname),
-            date_hired: s(values.employee_hiring_date),
-        };
-
-    // --- OPTIONAL top-level fields (only if provided) ---
-    addIf(payload, "dob", s(values.dob)); // expect YYYY-MM-DD
-    if (values.gender) payload.gender = lower(values.gender);
-    if (values.ssn) payload.ssn = s(values.ssn).replace(/-/g, "");
-    if (values.compensation_type) payload.compensation_type = lower(values.compensation_type);
-    if (values.marital_status) payload.marital_status = lower(values.marital_status);
-    if (
-        values.dependants_count !== undefined &&
-        values.dependants_count !== null &&
-        `${values.dependants_count}`.trim() !== ""
-    ) {
-        payload.dependants = Number(values.dependants_count);
-    }
-    if (values.date_offboarded) payload.date_offboarded = s(values.date_offboarded);
-
-    console.log("Submitting payload:", payload);
-
-
-        const apiBaseUrl = "http://127.0.0.1:8000/api"; // from .env
-        const endpoint = `${apiBaseUrl}/emp/employeeapi/`
-        console.log("Endpoint---------------------",endpoint)
-        const res = await axios.post(endpoint, payload, {
-            auth: {
-                username: 'prabh',  
-                password: 'wasd1234'  
-            },
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-    console.log("API Response:", res.data);
-    alert("Form submitted successfully!");
-    } catch (err) {
+    alert("Employee onboarded successfully!");
+  } catch (err: any) {
     console.error("Submit error:", err);
-    alert("Something went wrong. See console for details.");
-    }
+    // alert("Something went wrong. See console for details.");
+  } finally {
+    loading.value = false;
+  }
 });
-
 
 
 </script>

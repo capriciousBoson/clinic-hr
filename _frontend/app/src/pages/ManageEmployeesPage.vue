@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 // adjust path if you don't use '@' alias
-import { getEmployees } from "@/typescript/getEmployees";
-
+import { getEmployees } from "@/typescript/employees";
 
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";

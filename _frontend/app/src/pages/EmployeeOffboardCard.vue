@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { updateEmployee } from "@/typescript/getEmployees";
+import { updateEmployee } from "@/typescript/employees";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,7 @@ const onOffboard = handleSubmit(async (vals) => {
         data.value = updated;
         emit("offboard", updated);
         emit("update:open", false);
+        alert("Employee offboarded successfully");
     } catch (e: any) {
         const apiMsg = e?.response?.data ?? e?.message ?? "Failed to save changes";
         error.value = typeof apiMsg === "string" ? apiMsg : JSON.stringify(apiMsg);

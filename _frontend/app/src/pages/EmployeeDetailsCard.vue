@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { getEmployee } from "@/typescript/getEmployees" 
+import { getEmployee } from "@/typescript/employees";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";

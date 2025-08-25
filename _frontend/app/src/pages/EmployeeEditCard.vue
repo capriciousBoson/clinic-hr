@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { getEmployee, updateEmployee } from "@/typescript/getEmployees";
+import { getEmployee, updateEmployee } from "@/typescript/employees";
 import RequiredLabel from '@/components/ui/required-label.vue'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -279,6 +279,7 @@ const onSave = handleSubmit(async (vals) => {
     data.value = updated;
     emit("save", updated);
     emit("update:open", false);
+    alert("Employee edited successfully");
   } catch (e: any) {
     const apiMsg = e?.response?.data ?? e?.message ?? "Failed to save changes";
     error.value = typeof apiMsg === "string" ? apiMsg : JSON.stringify(apiMsg);
