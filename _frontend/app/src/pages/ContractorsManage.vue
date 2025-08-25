@@ -6,6 +6,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil, FileMinus } from "lucide-vue-next";
 import ContractorDetailsCard from "@/pages/ContractorDetailsCard.vue";
+import ContractorEditCard from "@/pages/ContractorEditCard.vue";
 
 type Party = {
     phone_number?: string;
@@ -47,6 +48,16 @@ function onView(row: any) {
     selectedRow.value = row;        // optional seed
     showDetails.value = true;
 }
+
+const showEdit = ref(false);
+
+function onEdit(row: any) {
+    if (!row?.id) return;
+    selectedId.value = Number(row.id);
+    selectedRow.value = row;        // optional seed
+    showEdit.value = true;
+}
+
 
 
 </script>
@@ -93,6 +104,12 @@ function onView(row: any) {
 
     <ContractorDetailsCard
         v-model:open="showDetails"
+        :contractor-id="selectedId"
+        :initial="selectedRow"
+    />
+
+    <ContractorEditCard
+        v-model:open="showEdit"
         :contractor-id="selectedId"
         :initial="selectedRow"
     />

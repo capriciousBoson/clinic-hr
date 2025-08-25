@@ -41,12 +41,41 @@ export async function createContractor(formValues: any) {
 }
 
 export async function getContractors(params: Record<string, any> = {}) {
-  const res = await api.get("/emp/contractorapi/", { params }); // DRF expects trailing slash
-  // If DRF pagination is on -> { count, results, next, previous }
-  return res.data;
+    const res = await api.get("/emp/contractorapi/", { params }); // DRF expects trailing slash
+    // If DRF pagination is on -> { count, results, next, previous }
+    return res.data;
 }
 
 export async function getContractor(id: number | string) {
-  const { data } = await api.get(`/emp/contractorapi/${id}/`);
-  return data; 
+    const { data } = await api.get(`/emp/contractorapi/${id}/`);
+    return data; 
+}
+
+export async function updateContractor(
+    id: number | string,
+    formValues: any,
+    baseline?: any 
+) {
+    const current = baseline ?? (await api.get(`/emp/contractorapi/${id}/`)).data;
+
+
+    const payload = {
+        // top-level employee fields
+        contractor_name: formValues.contractor_name ?? current.contractor_name,
+        tin: formValues.tin ? String(formValues.tin).replace(/-/g, "") : current.tin,
+
+        // nested party
+        party: {
+            ...(current.party ?? {}),
+            email: formValues.email ?? current.party?.email,
+            phone_number: formValues.mobile ?? current.party?.phone_number,
+            address_full: formValues.address_full ?? current.party?.address_full,
+            address_city: formValues.city ?? current.party?.address_city,
+            address_state: formValues.state ?? current.party?.address_state,
+            address_zip: formValues.address_zip ?? current.party?.address_zip,
+        },
+    };
+
+    const { data } = await api.put(`/emp/contractorapi/${id}/`, payload); // note the trailing slash
+    return data;
 }
