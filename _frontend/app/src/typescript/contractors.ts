@@ -20,12 +20,12 @@ export async function createContractor(formValues: any) {
     const party: Record<string, any> = {
         email: s(formValues.email),
         phone_number: s(formValues.phone_number),
-        address_state: (s(formValues.state) || "").toUpperCase(),
+        address_state: (s(formValues.address_state) || "").toUpperCase(),
     }
 
     // OPTIONAL party fields
     addIf(party, "address_full", s(formValues.address_full))
-    addIf(party, "address_city", s(formValues.city))
+    addIf(party, "address_city", s(formValues.address_city))
     addIf(party, "address_zip", s(formValues.address_zip))
 
     const payload: Record<string, any> = {
@@ -44,4 +44,9 @@ export async function getContractors(params: Record<string, any> = {}) {
   const res = await api.get("/emp/contractorapi/", { params }); // DRF expects trailing slash
   // If DRF pagination is on -> { count, results, next, previous }
   return res.data;
+}
+
+export async function getContractor(id: number | string) {
+  const { data } = await api.get(`/emp/contractorapi/${id}/`);
+  return data; 
 }

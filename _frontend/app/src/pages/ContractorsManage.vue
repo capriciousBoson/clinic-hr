@@ -5,6 +5,7 @@ import { getContractors } from "@/typescript/contractors";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil, FileMinus } from "lucide-vue-next";
+import ContractorDetailsCard from "@/pages/ContractorDetailsCard.vue";
 
 type Party = {
     phone_number?: string;
@@ -37,6 +38,17 @@ onMounted(load);
 const selectedId = ref<number | null>(null);
 const selectedRow = ref<any | null>(null);
 
+const showDetails = ref(false);
+
+function onView(row: any) {
+    console.log("In function", row)
+    if (!row?.id) return;
+    selectedId.value = Number(row.id);
+    selectedRow.value = row;        // optional seed
+    showDetails.value = true;
+}
+
+
 </script>
 
 <template>
@@ -62,13 +74,13 @@ const selectedRow = ref<any | null>(null);
                 <TableCell>{{ c.party?.email || "—" }}</TableCell>
                 <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onView(e)">
+                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onView(c)">
                     <Eye class="w-4 h-4" /><span class="hidden sm:inline">View Details</span>
                     </Button>
-                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onEdit(e)">
+                    <Button variant="ghost" size="sm" class="inline-flex items-center gap-1" @click="onEdit(c)">
                     <Pencil class="w-4 h-4" /><span class="hidden sm:inline">Edit Details</span>
                     </Button>
-                    <Button variant="destructive" size="sm" class="inline-flex items-center gap-1" @click="Delete(e)">
+                    <Button variant="destructive" size="sm" class="inline-flex items-center gap-1" @click="Delete(c)">
                     <FileMinus class="w-4 h-4" /><span class="hidden sm:inline">Delete</span>
                     </Button>
                 </div>
@@ -78,5 +90,12 @@ const selectedRow = ref<any | null>(null);
         </Table>
         </div>
     </div>
+
+    <ContractorDetailsCard
+        v-model:open="showDetails"
+        :contractor-id="selectedId"
+        :initial="selectedRow"
+    />
+
 </template>
 
