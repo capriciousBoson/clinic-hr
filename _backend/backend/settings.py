@@ -13,13 +13,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 from os import getenv, path
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 print(f"base dir = {BASE_DIR}")
 
 # Load python environment
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env.local')
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -96,17 +97,33 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+DATABASE_URL = (
+    getenv("DATABASE_URL")          # standard name most hosts use
+    or getenv("POSTGRES_URL")       # Vercel Postgres/Neon often injects this
+    or None
+)
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': getenv('DATABASE_NAME'),
-        'USER' : getenv('DATABASE_ADMIN_USERNAME'),
-        'PASSWORD' : getenv('DATABASE_ADMIN_PASSWORD'),
-        'HOST': getenv('DATABSE_HOST_ADDRESS'),
-        'PORT': getenv('DATABSE_HOST_PORT_NUMBER'),
+if DATABASE_URL:
+    # Neon requires SSL; most hosted Postgres do. Gate with an env so local “prod-like” tests can toggle it.
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=getenv("DB_SSL_REQUIRE", "True") == "True",  # True on Vercel/Neon
+        )
     }
-}
+else:
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': getenv('DATABASE_NAME'),
+            'USER' : getenv('DATABASE_ADMIN_USERNAME'),
+            'PASSWORD' : getenv('DATABASE_ADMIN_PASSWORD'),
+            'HOST': getenv('DATABASE_HOST_ADDRESS'),
+            'PORT': getenv('DATABASE_HOST_PORT_NUMBER'),
+        }
+    }
 
 
 # Password validation
@@ -149,3 +166,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

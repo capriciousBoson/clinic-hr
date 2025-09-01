@@ -1,0 +1,17 @@
+{
+  "functions": {
+    "backend/wsgi.py": { "runtime": "python3.12" }
+  },
+  "builds": [
+    {
+      "src": "build_files.sh",
+      "use": "@vercel/static-build",
+      "config": { "distDir": ".vercel/output" }
+    }
+  ],
+  "routes": [
+    { "src": "^/api/.*", "dest": "backend/wsgi.py" },        
+    { "src": "^/static/(.*)", "dest": "/static/$1" },        
+    { "src": "^(?!/api/).*", "dest": "/index.html" }          
+  ]
+}
