@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "_backend/backend/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "buildCommand": "cd _frontend/app && npm ci && npm run build && cd ../../_backend && pip install -r requirements.txt && python manage.py collectstatic --noinput",
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/media/(.*)", "dest": "/media/$1" },
+    { "src": "/(.*)", "dest": "_backend/backend/wsgi.py" }
+  ]
+}

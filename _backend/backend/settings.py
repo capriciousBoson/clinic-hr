@@ -29,7 +29,11 @@ FIELD_ENCRYPTION_KEY = getenv('DJANGO_ENCRYPTED_FIELD_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = getenv("DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+
+def _list_env(name, default=""):
+    return [x.strip() for x in getenv(name, default).split(",") if x.strip()]
+
+ALLOWED_HOSTS = _list_env("ALLOWED_HOSTS", "127.0.0.1,localhost,.vercel.app")
 
 
 # Behind Vercel proxy, let Django detect HTTPS and host correctly
@@ -68,7 +72,7 @@ MIDDLEWARE = [
 
 ]
 
-CORS_ALLOWED_ORIGINS = getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+CORS_ALLOWED_ORIGINS = _list_env("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS.copy() 
 
