@@ -5,7 +5,7 @@
       "use": "@vercel/python"
     }
   ],
-  "buildCommand": "cd _frontend/app && npm ci && npm run build && cd ../../_backend && pip install -r requirements.txt && python manage.py collectstatic --noinput",
+  "buildCommand": "cd _frontend/app && npm ci && npm run build && cd ../../_backend && pip install -r requirements.txt && python manage.py collectstatic --noinput &&  python manage.py migrate --noinput",
   "routes": [
     { "src": "/static/(.*)", "dest": "/static/$1" },
     { "src": "/media/(.*)", "dest": "/media/$1" },
