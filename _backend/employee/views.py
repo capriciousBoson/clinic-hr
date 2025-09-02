@@ -2,7 +2,8 @@ from rest_framework.views import APIView
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
+from django.views.generic import TemplateView
 from .models import Party, EmployeeProfile, ContractorProfile, Document
 from .serializers import (
                 EmployeeProfileCreateSerializer,
@@ -29,6 +30,7 @@ class EmployeeProfileListCreateView(APIView):
 
         if serializer.is_valid():
             serializer.save()
+            print(f"created employee : {serializer.data}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         print(f"serializer erors - {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -158,4 +160,7 @@ class DocumentDetailView(APIView):
     #         instance = serializer.save()
     #         return Response(DocumentListSerializer(instance, context={"request": request}).data)
     #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class FrontendAppView(TemplateView):
+    template_name = "index.html"
    

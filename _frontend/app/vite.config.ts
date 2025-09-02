@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/static/dist/',
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
@@ -21,6 +22,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "dist",  // Vite default; we'll ship this to Vercel static
+    outDir: "../../_backend/static/dist",  // Vite default; we'll ship this to Vercel static
+    emptyOutDir: true,   
   },
 })

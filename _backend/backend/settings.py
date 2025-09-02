@@ -28,8 +28,13 @@ SECRET_KEY = getenv('DJANGO_SECRET_KEY')
 FIELD_ENCRYPTION_KEY = getenv('DJANGO_ENCRYPTED_FIELD_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = getenv('DEBUG')
-ALLOWED_HOSTS = getenv('ALLOWED_HOSTS').split(",")
+DEBUG = getenv("DEBUG", "True").lower() == "true"
+ALLOWED_HOSTS = getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+
+
+# Behind Vercel proxy, let Django detect HTTPS and host correctly
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # media root
 MEDIA_URL = "/media/"
@@ -53,12 +58,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 CORS_ALLOWED_ORIGINS = getenv("CORS_ALLOWED_ORIGINS", "").split(",")
@@ -80,7 +87,7 @@ REST_FRAMEWORK = {
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS':[BASE_DIR / "_frontend" / "app"/ "dist"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -160,10 +167,23 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+STATICFILES_DIRS = [
+    BASE_DIR / "static"  # BASE_DIR = _backend
+]
+
+TEMPLATES[0]["DIRS"] = [BASE_DIR / "staticfiles" / "dist"]
+# BASE_DIR points to _backend
+# BASE_DIR = Path(__file__).resolve().parent.parent  
+
+# Go up one level to the project root, then into _frontend
+# _vue_assets = BASE_DIR.parent / "_frontend" / "app" / "dist" / "assets"
+# if _vue_assets.exists():
+#     STATICFILES_DIRS = [_vue_assets]
+
+# TEMPLATES[0]["DIRS"] = [BASE_DIR.parent / "_frontend" / "app" / "dist"]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
